@@ -25,27 +25,7 @@ npm i @wuneo/nativescript-env --save-dev
 yarn add @wuneo/nativescript-env --dev
 ```
 
-### 2. Configure `nativescript.config.ts`
-
-Import `getAppId` from `@wuneo/nativescript-env/helper` to dynamically resolve the App ID:
-
-```typescript
-import { NativeScriptConfig } from '@nativescript/core';
-
-let getAppId: any;
-try {
-  getAppId = require('@wuneo/nativescript-env').getAppId;
-} catch (_e) {}
-
-export default {
-  // Dynamically resolves App ID based on CLI flags (--env.use.release, etc.)
-  id: typeof getAppId === 'function' ? getAppId(__dirname, 'com.example.app') : 'com.example.app',
-  appResourcesPath: 'App_Resources',
-  appPath: 'src',
-} as NativeScriptConfig;
-```
-
-### 🚀 Quick Start (CLI Initialization)
+### 2. Initialize Configuration File
 
 Run the initialization command in your NativeScript project root:
 
@@ -53,7 +33,9 @@ Run the initialization command in your NativeScript project root:
 npx wuneo-env init
 ```
 
-This will automatically create an `environment-rules.yaml` template file pre-populated with detailed explanatory comments.
+This will create an `environment-rules.yaml` template file in your project root with detailed explanatory comments.
+
+*(No modifications to `nativescript.config.ts` required! The plugin automatically manages App IDs, assets, and resources in the background during build time.)*
 
 ---
 
