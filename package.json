@@ -11,6 +11,10 @@
   },
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "bin": {
+    "wuneo-env": "lib/cli.js",
+    "nativescript-env": "lib/cli.js"
+  },
   "exports": {
     ".": "./lib/index.js",
     "./helper": "./lib/helper.js",
@@ -55,11 +59,15 @@
   },
   "devDependencies": {
     "@nativescript/hook": "^2.0.0",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^18.14.1",
     "@types/semver": "^7.3.13",
     "plist": "^3.0.6",
     "semver": "^7.3.8",
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
   },
   "bugs": {
     "url": "https://github.com/cowfox/nativescript-multiple-environments-building/issues"

@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs';
+import * as yaml from 'js-yaml';
 
 export interface EnvironmentEntry {
   name: string;
@@ -24,32 +25,43 @@ export interface EnvironmentRulesContent {
 
 /**
  * Get the full path to the "Env Rules" file.
- * In v1.0.0+, it enforces a unified `environment-rules.json` file.
+ * Supports environment-rules.yaml, environment-rules.yml, or environment-rules.json.
  */
 export function getEnvRulesFilePath(envRulesFilename: string, projectFolderPath: string): string {
-  const unifiedPath = path.join(projectFolderPath, 'environment-rules.json');
-  if (fs.existsSync(unifiedPath)) {
-    return unifiedPath;
+  const possibleNames = ['environment-rules.yaml', 'environment-rules.yml', 'environment-rules.json'];
+
+  for (const name of possibleNames) {
+    const fullPath = path.join(projectFolderPath, name);
+    if (fs.existsSync(fullPath)) {
+      return fullPath;
+    }
   }
 
   const androidRules = path.join(projectFolderPath, 'environment-rules.android.json');
   const iosRules = path.join(projectFolderPath, 'environment-rules.ios.json');
   if (fs.existsSync(androidRules) || fs.existsSync(iosRules)) {
     throw new Error(
-      `-o[NeoEnv]o--x DEPRECATION NOTICE: Separate 'environment-rules.android.json' and 'environment-rules.ios.json' files are deprecated in v1.0.0+. Please merge your configuration into a single 'environment-rules.json' file. See README for details.`
+      `-o[NeoEnv]o--x DEPRECATION NOTICE: Separate 'environment-rules.android.json' and 'environment-rules.ios.json' files are deprecated in v1.0.0+. Please merge your configuration into 'environment-rules.yaml' or 'environment-rules.json'.`
     );
   }
 
-  return unifiedPath;
+  return path.join(projectFolderPath, 'environment-rules.yaml');
 }
 
 /**
- * Load contents from the "Env Rules" file.
+ * Load contents from the "Env Rules" file (supports YAML and JSON).
  */
 export function readEnvRules(envRulesFileFullPath: string): EnvironmentRulesContent {
-  if (fs.existsSync(envRulesFileFullPath)) {
-    return JSON.parse(fs.readFileSync(envRulesFileFullPath, 'utf8'));
+  if (!fs.existsSync(envRulesFileFullPath)) {
+    throw new Error(
+      `-o[NeoEnv]o--x Environment rules file does not exist at "${envRulesFileFullPath}"! Please check or run 'npx wuneo-env init' to generate a template configuration.`
+    );
+  }
+
+  const fileContent = fs.readFileSync(envRulesFileFullPath, 'utf8');
+  if (envRulesFileFullPath.endsWith('.yaml') || envRulesFileFullPath.endsWith('.yml')) {
+    return yaml.load(fileContent) as EnvironmentRulesContent;
   } else {
-    throw new Error(`-o[NeoEnv]o--x "environment-rules.json" file does not exist at "${envRulesFileFullPath}"! Please check...`);
+    return JSON.parse(fileContent);
   }
 }

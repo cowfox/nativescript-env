@@ -45,36 +45,60 @@ export default {
 } as NativeScriptConfig;
 ```
 
-### 3. Create `environment-rules.json`
+### 🚀 Quick Start (CLI Initialization)
 
-Create `environment-rules.json` in your project root directory:
+Run the initialization command in your NativeScript project root:
 
-```json
-{
-  "version": "1.0.0",
-  "default": "development",
-  "extraPaths": [
-    "src/environments"
-  ],
-  "directCopyRules": {
-    "Info.plist": "App_Resources/iOS/Info.plist",
-    "GoogleService-Info.plist": "App_Resources/iOS/GoogleService-Info.plist"
-  },
-  "appIconPath": "environments/app-icon/icon.png",
-  "environments": [
-    {
-      "name": "development",
-      "appBundleId": "com.example.app.dev"
-    },
-    {
-      "name": "release",
-      "appBundleId": {
-        "android": "com.example.app.android",
-        "ios": "com.example.app.ios"
-      }
-    }
-  ]
-}
+```bash
+npx wuneo-env init
+```
+
+This will automatically create an `environment-rules.yaml` template file pre-populated with detailed explanatory comments.
+
+---
+
+### ⚙️ Environment Configuration (`environment-rules.yaml` or `.json`)
+
+You can use either **`environment-rules.yaml`** (recommended for adding comments) or `environment-rules.json`:
+
+```yaml
+# ==============================================================================
+# NativeScript Environment Rules Configuration (@wuneo/nativescript-env)
+# ==============================================================================
+
+# App Version & Build Numbers
+version: "6.10.0"
+buildNumber: "6"
+autoVersionCode: true
+
+# Default active environment when no CLI flag (e.g. --env.use.<env>) is specified
+default: "development"
+
+# Extra directories to scan for environment-specific file overrides (e.g. environment.dev.ts -> environment.ts)
+extraPaths:
+  - "environments"
+
+# Direct file copy mappings (Source file in env folder -> Destination file in project)
+directCopyRules:
+  Info.plist: "App_Resources/iOS/Info.plist"
+  GoogleService-Info.plist: "App_Resources/iOS/GoogleService-Info.plist"
+  Podfile: "App_Resources/iOS/Podfile"
+
+# Master App Icon path (Automatically resizes for iOS & Android)
+appIconPath: "environments/app-icon/icon.png"
+
+# Environment Definitions
+environments:
+  - name: "development"
+    appBundleId: "com.example.app.dev"
+
+  - name: "staging"
+    appBundleId: "com.example.app.staging"
+
+  - name: "release"
+    appBundleId:
+      android: "com.example.app.android"
+      ios: "com.example.app.ios"
 ```
 
 ### 4. Build Your App
