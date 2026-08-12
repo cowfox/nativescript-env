@@ -95,17 +95,83 @@ ns run ios --env.use.release
 
 ---
 
-## 🛠 Features & Capabilities
+## 📂 Deep Dive: Managing Environment Files & Native Resources
 
-- 🎯 **Dynamic App Bundle ID**: Set per-environment App IDs directly in `environment-rules.json`, with optional platform overrides (`{ "android": "...", "ios": "..." }`).
-- 📁 **Smart File Copying**: Automatically matches files like `google-services.staging.json` $\rightarrow$ `google-services.json` or `environment.prod.ts` $\rightarrow$ `environment.ts` during build.
-- 🎨 **App Icon Generation**: Integrates with `ns resources generate icons` to build environment-specific App Icons automatically.
-- 🔢 **Auto Versioning**: Manages `versionName`, `versionCode`, and `buildNumber` across builds.
-- ⚡️ **Zero Legacy Hacks**: Built natively for NativeScript 8+ with zero runtime overhead.
+This plugin provides two complementary mechanisms for managing environment-specific files: **`extraPaths`** and **`directCopyRules`**.
+
+### 1. `extraPaths` (Suffix-Based In-Place File Swapping)
+
+In your source code (e.g. `src/environments/` or `app/`), you can keep environment-specific variants alongside your base files.
+
+#### Project File Structure Example:
+```text
+my-project/
+├── environments/
+│   ├── environment.ts            <-- Base file (Imported in your JS/TS code)
+│   ├── environment.dev.ts        <-- Active when --env.use.development
+│   ├── environment.staging.ts    <-- Active when --env.use.staging
+│   └── environment.release.ts    <-- Active when --env.use.release
+```
+
+#### How it works:
+When `extraPaths: ["environments"]` is set and you build with `--env.use.staging`:
+1. The plugin finds `environment.staging.ts`.
+2. It overwrites `environment.ts` with the contents of `environment.staging.ts`.
+3. In `after-prepare`, all `*.staging.ts`, `*.dev.ts`, etc. files are automatically filtered out from the final native build bundle to keep production binaries clean.
 
 ---
 
-## 📖 Configuration Reference (`environment-rules.json`)
+### 2. `directCopyRules` (Native Resource Overrides for iOS & Android)
+
+Native resources for iOS and Android often require exact filenames placed in specific directories (like `App_Resources/iOS` or `App_Resources/Android`).
+
+#### Project File Structure Example:
+```text
+my-project/
+├── environments/
+│   ├── iOS/
+│   │   ├── Info.dev.plist
+│   │   ├── Info.release.plist
+│   │   ├── GoogleService-Info.dev.plist
+│   │   ├── GoogleService-Info.release.plist
+│   │   ├── Podfile.dev
+│   │   └── Podfile.release
+│   └── Android/
+│       ├── google-services.dev.json
+│       └── google-services.release.json
+```
+
+#### Configuration Example in `environment-rules.yaml`:
+```yaml
+directCopyRules:
+  # iOS Resources
+  Info.plist: "App_Resources/iOS/Info.plist"
+  GoogleService-Info.plist: "App_Resources/iOS/GoogleService-Info.plist"
+  Podfile: "App_Resources/iOS/Podfile"
+
+  # Android Resources
+  google-services.json: "App_Resources/Android/google-services.json"
+```
+
+#### How iOS & Android Resource Management Works:
+- **iOS (`Info.plist`, `GoogleService-Info.plist`, `Podfile`)**:
+  During `before-prepare`, the plugin matches `Info.<env>.plist` inside your `environments/` directory and copies it directly to `App_Resources/iOS/Info.plist`. Xcode / CocoaPods then picks up the updated file during compile time.
+- **Android (`google-services.json`)**:
+  Android's Google Services Gradle plugin (`com.google.gms.google-services`) requires `google-services.json` to be physically present at `App_Resources/Android/google-services.json`. The plugin copies `google-services.<env>.json` $\rightarrow$ `App_Resources/Android/google-services.json` before Gradle tasks execute, ensuring Firebase & Push Notifications build seamlessly per environment.
+
+---
+
+## 🛠 Features & Capabilities
+
+- 🎯 **Dynamic App Bundle ID**: Set per-environment App IDs directly in `environment-rules.yaml`, with optional platform overrides (`{ "android": "...", "ios": "..." }`).
+- 📁 **Smart File Swapping**: Automatically matches files like `environment.staging.ts` $\rightarrow$ `environment.ts` or `GoogleService-Info.dev.plist` $\rightarrow$ `GoogleService-Info.plist` during build.
+- 🎨 **App Icon Generation**: Integrates with NativeScript resource generator to build environment-specific App Icons automatically.
+- 🔢 **Auto Versioning**: Manages `versionName`, `versionCode`, and `buildNumber` across builds.
+- ⚡️ **Zero Code Modifications**: Built natively for NativeScript 8+ with zero runtime overhead or `nativescript.config.ts` hacks.
+
+---
+
+## 📖 Configuration Reference (`environment-rules.yaml` / `.json`)
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -113,9 +179,9 @@ ns run ios --env.use.release
 | `environments` | `Array` | Environment definitions (`name`, `appBundleId`, optional `matchRules`). |
 | `environments[].appBundleId` | `string` \| `object` | App Bundle ID string or `{ "android": "...", "ios": "..." }`. |
 | `environments[].matchRules` | `string` (Optional) | Custom regex matching pattern (Auto-derived as `.*\.name\..*` if omitted). |
-| `extraPaths` | `string[]` | Additional directories outside `App_Resources` to process file swapping. |
+| `extraPaths` | `string[]` | Additional directories outside `App_Resources` to process suffix file swapping. |
 | `directCopyRules` | `Record<string, string>` | Direct file copy mappings after standard environment file swap. |
-| `appIconPath` | `string` | Icon file path to run `ns resources generate icons`. |
+| `appIconPath` | `string` | Master icon file path to generate platform app icons. |
 
 ---
 
