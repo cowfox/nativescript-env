@@ -31,11 +31,15 @@ Import `getAppId` from `@wuneo/nativescript-env/helper` to dynamically resolve t
 
 ```typescript
 import { NativeScriptConfig } from '@nativescript/core';
-import { getAppId } from '@wuneo/nativescript-env/helper';
+
+let getAppId: any;
+try {
+  getAppId = require('@wuneo/nativescript-env').getAppId;
+} catch (_e) {}
 
 export default {
   // Dynamically resolves App ID based on CLI flags (--env.use.release, etc.)
-  id: getAppId(__dirname, 'com.example.app'),
+  id: typeof getAppId === 'function' ? getAppId(__dirname, 'com.example.app') : 'com.example.app',
   appResourcesPath: 'App_Resources',
   appPath: 'src',
 } as NativeScriptConfig;
