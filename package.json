@@ -13,17 +13,21 @@
   "types": "lib/index.d.ts",
   "exports": {
     ".": "./lib/index.js",
-    "./helper": "./lib/helper.js"
+    "./helper": "./lib/helper.js",
+    "./lib/*": "./lib/*.js",
+    "./*": "./lib/*.js"
   },
   "nativescript": {
     "hooks": [
       {
         "type": "before-prepare",
-        "script": "lib/before-prepare.js"
+        "script": "lib/before-prepare",
+        "inject": true
       },
       {
         "type": "after-prepare",
-        "script": "lib/after-prepare.js"
+        "script": "lib/after-prepare",
+        "inject": true
       }
     ]
   },
@@ -45,9 +49,12 @@
     "build": "tsc",
     "prepare": "npm run build",
     "prepack": "npm run build",
-    "test": "exit 0;"
+    "test": "exit 0;",
+    "postinstall": "node postinstall.js",
+    "preuninstall": "node preuninstall.js"
   },
   "devDependencies": {
+    "@nativescript/hook": "^2.0.0",
     "@types/node": "^18.14.1",
     "@types/semver": "^7.3.13",
     "plist": "^3.0.6",
