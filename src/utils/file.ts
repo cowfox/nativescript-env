@@ -43,7 +43,7 @@ export function detectAndCopyEnvFiles(
             logger.debug?.('-o[NeoEnv]o--x Not writing new file, as file that exists matches the file that it will be replaced with.');
           }
 
-          doDirectFileCopy(destinationFileName, destinationFilePath);
+          doDirectFileCopy(destinationFileName, itemPath);
         }
       }
     } catch (_error) {}
@@ -99,9 +99,19 @@ function buildDestinationFileName(logger: any, file: string, regex: RegExp): str
   if (Array.isArray(matches) && matches.length === 4) {
     return `${matches[1]}${matches[3]}`;
   } else {
+    const rawPattern = regex.source || String(regex);
+    const cleanPattern = rawPattern.replace(/^\/|\/$/g, '');
+    const suffixRegex = new RegExp(`\\.(${cleanPattern})(?=\\.|$)`, 'i');
+    if (suffixRegex.test(file)) {
+      return file.replace(suffixRegex, '');
+    }
+
     const fileNameParts = file.split('.');
+    if (fileNameParts.length <= 2) {
+      return fileNameParts[0];
+    }
     const ext = fileNameParts[fileNameParts.length - 1];
-    const fileName = fileNameParts.splice(0, fileNameParts.length - 2).join('.');
+    const fileName = fileNameParts.slice(0, fileNameParts.length - 2).join('.');
     return `${fileName}.${ext}`;
   }
 }

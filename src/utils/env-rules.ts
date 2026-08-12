@@ -25,15 +25,21 @@ export interface EnvironmentRulesContent {
 
 /**
  * Get the full path to the "Env Rules" file.
- * Supports environment-rules.yaml, environment-rules.yml, or environment-rules.json.
+ * Prioritizes unified files: environment-rules.yaml, environment-rules.yml, environment-rules.json.
  */
 export function getEnvRulesFilePath(envRulesFilename: string, projectFolderPath: string): string {
   const possibleNames = ['environment-rules.yaml', 'environment-rules.yml', 'environment-rules.json'];
-
   for (const name of possibleNames) {
     const fullPath = path.join(projectFolderPath, name);
     if (fs.existsSync(fullPath)) {
       return fullPath;
+    }
+  }
+
+  if (envRulesFilename) {
+    const specificPath = path.join(projectFolderPath, envRulesFilename);
+    if (fs.existsSync(specificPath)) {
+      return specificPath;
     }
   }
 

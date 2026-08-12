@@ -9,6 +9,13 @@
   "publishConfig": {
     "access": "public"
   },
+  "files": [
+    "lib",
+    "postinstall.js",
+    "preuninstall.js",
+    "README.md",
+    "LICENSE"
+  ],
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "bin": {
