@@ -1,7 +1,7 @@
 # =============================================================================
 # Release — @wuneo/nativescript-env → npmjs.org (public)
 # =============================================================================
-# Uses NPM Trusted Publisher (OIDC). No static NPM_TOKEN required!
+# Authenticates via NPM_TOKEN secret.
 #
 # neo publish model — publishing is triggered by a git TAG, never by a branch
 # push. Pushing commits to release/** or develop starts NO workflow run;
@@ -24,7 +24,6 @@ concurrency:
 
 permissions:
   contents: read
-  id-token: write # Required for NPM Trusted Publisher (OIDC)
 
 env:
   NODE_VERSION: '20'
@@ -46,6 +45,11 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
+      - name: '🔑 Authenticate npm'
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
+
       - name: '📥 Install'
         run: pnpm install --frozen-lockfile
 
@@ -56,3 +60,6 @@ jobs:
 
       - name: '🚀 Publish (build + changeset publish)'
         run: pnpm release
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
