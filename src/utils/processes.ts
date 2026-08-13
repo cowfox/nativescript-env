@@ -20,6 +20,59 @@ export function updateAppBundleId(
   if (projectData && projectData.projectIdentifiers) {
     projectData.projectIdentifiers.ios = projectData.projectIdentifiers.android = resolvedId;
   }
+
+  const projectDir = projectData?.projectDir || process.cwd();
+
+  // 1. Sync id in nativescript.config.ts or nativescript.config.js
+  const configTs = path.join(projectDir, 'nativescript.config.ts');
+  const configJs = path.join(projectDir, 'nativescript.config.js');
+  [configTs, configJs].forEach((cfgPath) => {
+    if (fs.existsSync(cfgPath)) {
+      try {
+        let content = fs.readFileSync(cfgPath, 'utf8');
+        const newContent = content.replace(/(id:\s*['"])[^'"]+(['"])/, `$1${resolvedId}$2`);
+        if (newContent !== content) {
+          fs.writeFileSync(cfgPath, newContent, 'utf8');
+        }
+      } catch (e) {}
+    }
+  });
+
+  // 2. Sync id in package.json "nativescript": { "id": "..." }
+  const pkgPath = path.join(projectDir, 'package.json');
+  if (fs.existsSync(pkgPath)) {
+    try {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+      if (pkg.nativescript && pkg.nativescript.id && pkg.nativescript.id !== resolvedId) {
+        pkg.nativescript.id = resolvedId;
+        fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
+      }
+    } catch (e) {}
+  }
+
+  // 3. Sync applicationId in platforms/android/app/build.gradle
+  const buildGradlePath = path.join(projectDir, 'platforms', 'android', 'app', 'build.gradle');
+  if (fs.existsSync(buildGradlePath)) {
+    try {
+      let gradleContent = fs.readFileSync(buildGradlePath, 'utf8');
+      const newGradleContent = gradleContent.replace(/(applicationId\s+['"])[^'"]+(['"])/g, `$1${resolvedId}$2`);
+      if (newGradleContent !== gradleContent) {
+        fs.writeFileSync(buildGradlePath, newGradleContent, 'utf8');
+      }
+    } catch (e) {}
+  }
+
+  // 4. Sync package in platforms/android/app/src/main/AndroidManifest.xml
+  const manifestPath = path.join(projectDir, 'platforms', 'android', 'app', 'src', 'main', 'AndroidManifest.xml');
+  if (fs.existsSync(manifestPath)) {
+    try {
+      let manifestContent = fs.readFileSync(manifestPath, 'utf8');
+      const newManifestContent = manifestContent.replace(/(package=\s*['"])[^'"]+(['"])/, `$1${resolvedId}$2`);
+      if (newManifestContent !== manifestContent) {
+        fs.writeFileSync(manifestPath, newManifestContent, 'utf8');
+      }
+    } catch (e) {}
+  }
 }
 
 export function updateVersioning(

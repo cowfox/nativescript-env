@@ -45,7 +45,13 @@ export = async function (
   hookArgs: any,
   $androidResourcesMigrationService?: any
 ) {
-  const platformName = hookArgs?.prepareData?.platform?.toLowerCase() || '';
+  if (process.env.NEO_ENV_HOOK_RUNNING === 'true') {
+    return;
+  }
+  process.env.NEO_ENV_HOOK_RUNNING = 'true';
+
+  try {
+    const platformName = hookArgs?.prepareData?.platform?.toLowerCase() || '';
   const platformData = $platformsDataService.getPlatformData(platformName, $projectData);
 
   const appResourcesFolder = path.join($projectData.appResourcesDirectoryPath, platformData.normalizedPlatformName);
@@ -104,4 +110,7 @@ export = async function (
 
   // Save updated "Env Rules"
   fs.writeFileSync(envRulesFilePath, JSON.stringify(envRulesContent, null, 4));
+  } finally {
+    delete process.env.NEO_ENV_HOOK_RUNNING;
+  }
 };
