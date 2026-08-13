@@ -11,13 +11,13 @@ function resolveMatchRules(envEntry: any): string {
   }
   const name = (envEntry.name || '').toLowerCase();
   if (name === 'development' || name === 'dev') {
-    return `([\\w?].*)(\\.(dev|development))($|\\..*)`;
+    return `([\\w?].*)(\\.(?:dev|development))($|\\..*)`;
   }
   if (name === 'release' || name === 'production' || name === 'prod') {
-    return `([\\w?].*)(\\.(release|production|prod))($|\\..*)`;
+    return `([\\w?].*)(\\.(?:release|production|prod))($|\\..*)`;
   }
   if (name === 'staging' || name === 'stg') {
-    return `([\\w?].*)(\\.(staging|stg))($|\\..*)`;
+    return `([\\w?].*)(\\.(?:staging|stg))($|\\..*)`;
   }
   return `([\\w?].*)(\\.${envEntry.name})($|\\..*)`;
 }

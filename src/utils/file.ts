@@ -96,8 +96,10 @@ export function replaceContentInFile(logger: any, pattern: RegExp, replacement: 
 
 function buildDestinationFileName(logger: any, file: string, regex: RegExp): string {
   const matches = file.match(regex);
-  if (Array.isArray(matches) && matches.length === 4) {
-    return `${matches[1]}${matches[3]}`;
+  if (Array.isArray(matches) && matches.length >= 4) {
+    const base = matches[1];
+    const ext = matches[matches.length - 1];
+    return `${base}${ext}`;
   } else {
     const rawPattern = regex.source || String(regex);
     const cleanPattern = rawPattern.replace(/^\/|\/$/g, '');
