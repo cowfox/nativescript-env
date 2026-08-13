@@ -218,11 +218,18 @@ export function copyExtraFolders(
 
 import { Jimp } from 'jimp';
 
-async function generateAdaptiveForeground(logger: any, androidResDir: string, cornerColor: number, inputFilePath: string, foregroundPath: string, monochromePath?: string): Promise<void> {
+async function generateAdaptiveForeground(
+  logger: any,
+  androidResDir: string,
+  fullAppIconPath: string,
+  targetWidth: number,
+  targetHeight: number,
+  foregroundPath: string,
+  monochromePath?: string
+): Promise<void> {
   try {
-    const image = await Jimp.read(inputFilePath);
-    const width = image.bitmap.width;
-    const height = image.bitmap.height;
+    const srcImage = await Jimp.read(fullAppIconPath);
+    const cornerColor = srcImage.getPixelColor(0, 0);
 
     // Update values/ic_launcher_background.xml color to match icon corner color
     const hexColor = '#' + (cornerColor >>> 8).toString(16).padStart(6, '0').toUpperCase();
@@ -235,15 +242,15 @@ async function generateAdaptiveForeground(logger: any, androidResDir: string, co
     }
 
     // Calculate Safe Zone dimensions (72dp / 108dp = 66.67%)
-    const safeWidth = Math.round(width * (72 / 108));
-    const safeHeight = Math.round(height * (72 / 108));
+    const safeWidth = Math.round(targetWidth * (72 / 108));
+    const safeHeight = Math.round(targetHeight * (72 / 108));
 
-    image.resize({ w: safeWidth, h: safeHeight });
+    const scaledImage = srcImage.clone().resize({ w: safeWidth, h: safeHeight });
 
-    const canvas = new Jimp({ width, height, color: cornerColor });
-    const x = Math.round((width - safeWidth) / 2);
-    const y = Math.round((height - safeHeight) / 2);
-    canvas.composite(image, x, y);
+    const canvas = new Jimp({ width: targetWidth, height: targetHeight, color: cornerColor });
+    const x = Math.round((targetWidth - safeWidth) / 2);
+    const y = Math.round((targetHeight - safeHeight) / 2);
+    canvas.composite(scaledImage, x, y);
 
     await canvas.write(foregroundPath as any);
     if (monochromePath) {
@@ -257,18 +264,11 @@ export async function generateAppIcon(logger: any, appIconPath: string | undefin
     const fullAppIconPath = path.join(projectData.projectDir, appIconPath);
     logger.info(`-o[NeoEnv]o--> Found "App Icon" at "${appIconPath}". Re-generating...`);
 
-    // Extract top-left corner pixel color from original source icon
-    let cornerColor = 0x00000000;
-    try {
-      const srcImage = await Jimp.read(fullAppIconPath);
-      cornerColor = srcImage.getPixelColor(0, 0);
-    } catch (e) {}
-
     const cmd = `ns resources generate icons ${fullAppIconPath}`;
     try {
       childProcess.execSync(cmd, { stdio: 'ignore' });
 
-      // Automatically generate Android Adaptive Icon layers (foreground & monochrome) with 66.7% safe zone padding
+      // Automatically generate Android Adaptive Icon layers (foreground & monochrome) with 66.7% safe zone padding directly from source icon
       const projectDir = projectData.projectDir || process.cwd();
       const androidResDir = path.join(projectDir, 'App_Resources', 'Android', 'src', 'main', 'res');
       if (fs.existsSync(androidResDir)) {
@@ -280,14 +280,18 @@ export async function generateAppIcon(logger: any, appIconPath: string | undefin
           const monochromePath = path.join(dirPath, 'ic_launcher_monochrome.png');
 
           if (fs.existsSync(legacyLauncherPath)) {
-            await generateAdaptiveForeground(
-              logger,
-              androidResDir,
-              cornerColor,
-              legacyLauncherPath,
-              foregroundPath,
-              fs.existsSync(monochromePath) ? monochromePath : undefined
-            );
+            try {
+              const legacyImg = await Jimp.read(legacyLauncherPath);
+              await generateAdaptiveForeground(
+                logger,
+                androidResDir,
+                fullAppIconPath,
+                legacyImg.bitmap.width,
+                legacyImg.bitmap.height,
+                foregroundPath,
+                fs.existsSync(monochromePath) ? monochromePath : undefined
+              );
+            } catch (e) {}
           }
         }
       }
