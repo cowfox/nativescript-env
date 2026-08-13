@@ -4,5 +4,7 @@
   "initialVersions": {
     "@wuneo/nativescript-env": "1.0.0"
   },
-  "changesets": []
+  "changesets": [
+    "1786580566-auto-generated"
+  ]
 }
