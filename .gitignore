@@ -3,3 +3,14 @@
 lib/
 package-lock.json
 node_modules
+
+# Environment (loaded by makefiles/version.mk for changelog tokens)
+.env
+.env.local
+
+# Packaging artifacts (npm/pnpm pack, publint)
+*.tgz
+
+# OS
+.DS_Store
+Thumbs.db

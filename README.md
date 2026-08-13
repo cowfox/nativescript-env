@@ -197,6 +197,64 @@ For legacy documentation and usage instructions, please refer to the [v0.8.2 Git
 
 ---
 
+## 🧑‍💻 Development & Release
+
+This package uses **[pnpm](https://pnpm.io)** + **[Changesets](https://github.com/changesets/changesets)**
+for versioning, and publishes to **npmjs.org** via GitHub Actions. A `Makefile` (neo shared
+tooling, vendored under `makefiles/`) wraps the common commands.
+
+### Local setup
+
+```bash
+pnpm install          # or: make install
+make build            # compile src/ -> lib/ (tsc)
+make type             # tsc --noEmit
+make exports          # validate published exports (attw + publint)
+make ci               # type + test + build
+make help             # list all commands
+```
+
+### Branch model
+
+| Branch        | Purpose                                  | Publishes            |
+| ------------- | ---------------------------------------- | -------------------- |
+| `master`      | production line                          | CI only (no publish) |
+| `develop`     | integration                              | `dev` pre-releases   |
+| `release/*`   | release stabilization                    | `alpha` → `beta` → `rc` → `latest` |
+| `feature/*`   | working branches                         | —                    |
+
+### Cutting a release
+
+```bash
+# 1. From develop — create a release branch (patch by default; minor / major)
+make cut minor                 # -> release/1.1.0
+
+# 2. On the release branch — enter pre-release mode
+make pre alpha
+
+# 3. Generate a changeset from your commits, then commit it
+make changeset auto
+git commit -m "🐳 chore(changeset): Add new changeset"
+
+# 4. Bump the version + push → CI publishes the alpha to npm
+make release push              # 1.1.0-alpha.0  (dist-tag: alpha)
+
+# 5. Iterate (beta / rc) as needed, then ship the final release
+make pre exit
+make release push              # 1.1.0          (dist-tag: latest)
+```
+
+`changeset publish` (run in CI on push to `release/**` / `develop` when `package.json`
+changes) auto-selects the npm dist-tag from `.changeset/pre.json`, and is idempotent —
+an already-published version is skipped.
+
+### CI secret
+
+Add a repository secret **`NPM_TOKEN`** — an npm **automation** token with publish rights
+on the `@wuneo` scope. The release workflow uses it as `NODE_AUTH_TOKEN`.
+
+---
+
 ## 📄 License
 
 Apache-2.0 © [cowfox](https://github.com/cowfox)
