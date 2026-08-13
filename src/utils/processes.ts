@@ -218,14 +218,11 @@ export function copyExtraFolders(
 
 import { Jimp } from 'jimp';
 
-async function generateAdaptiveForeground(logger: any, androidResDir: string, inputFilePath: string, foregroundPath: string, monochromePath?: string): Promise<void> {
+async function generateAdaptiveForeground(logger: any, androidResDir: string, cornerColor: number, inputFilePath: string, foregroundPath: string, monochromePath?: string): Promise<void> {
   try {
     const image = await Jimp.read(inputFilePath);
     const width = image.bitmap.width;
     const height = image.bitmap.height;
-
-    // Extract top-left corner pixel color to fill padding seamlessly with icon background color
-    const cornerColor = image.getPixelColor(0, 0);
 
     // Update values/ic_launcher_background.xml color to match icon corner color
     const hexColor = '#' + (cornerColor >>> 8).toString(16).padStart(6, '0').toUpperCase();
@@ -259,6 +256,14 @@ export async function generateAppIcon(logger: any, appIconPath: string | undefin
   if (appIconPath && fs.existsSync(path.join(projectData.projectDir, appIconPath))) {
     const fullAppIconPath = path.join(projectData.projectDir, appIconPath);
     logger.info(`-o[NeoEnv]o--> Found "App Icon" at "${appIconPath}". Re-generating...`);
+
+    // Extract top-left corner pixel color from original source icon
+    let cornerColor = 0x00000000;
+    try {
+      const srcImage = await Jimp.read(fullAppIconPath);
+      cornerColor = srcImage.getPixelColor(0, 0);
+    } catch (e) {}
+
     const cmd = `ns resources generate icons ${fullAppIconPath}`;
     try {
       childProcess.execSync(cmd, { stdio: 'ignore' });
@@ -278,6 +283,7 @@ export async function generateAppIcon(logger: any, appIconPath: string | undefin
             await generateAdaptiveForeground(
               logger,
               androidResDir,
+              cornerColor,
               legacyLauncherPath,
               foregroundPath,
               fs.existsSync(monochromePath) ? monochromePath : undefined
