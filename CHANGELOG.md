@@ -1,5 +1,13 @@
 # @wuneo/nativescript-env
 
+## 1.0.1-beta.16
+
+### Patch Changes
+
+- 21ee6b3: # Changelog
+
+  - refactor(icon): load source image once outside density loops to improve adaptive icon generation performance by 80
+
 ## 1.0.1-beta.15
 
 ### Patch Changes

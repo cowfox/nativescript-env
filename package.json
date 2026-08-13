@@ -1,6 +1,6 @@
 {
   "name": "@wuneo/nativescript-env",
-  "version": "1.0.1-beta.15",
+  "version": "1.0.1-beta.16",
   "type": "commonjs",
   "description": "The complete multi-environment management plugin for NativeScript 8+. Dynamically switch App IDs, Google Services, Podfiles, Info.plist, AndroidManifest, strings.xml, app icons, and env configs per build.",
   "repository": {
