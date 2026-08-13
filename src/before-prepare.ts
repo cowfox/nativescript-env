@@ -49,6 +49,7 @@ export = async function (
     return;
   }
   process.env.NEO_ENV_HOOK_RUNNING = 'true';
+  delete process.env.NEO_ENV_AFTER_HOOK_RUNNING;
 
   const platformName = hookArgs?.prepareData?.platform?.toLowerCase() || '';
   const platformData = $platformsDataService.getPlatformData(platformName, $projectData);

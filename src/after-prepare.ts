@@ -6,6 +6,11 @@ import * as fileUtils from './utils/file';
 import * as processes from './utils/processes';
 
 export = async function ($logger: any, $projectData: any, hookArgs: any) {
+  if (process.env.NEO_ENV_AFTER_HOOK_RUNNING === 'true') {
+    return;
+  }
+  process.env.NEO_ENV_AFTER_HOOK_RUNNING = 'true';
+
   const platformNameFromHookArgs = hookArgs && (hookArgs.platform || (hookArgs.prepareData && hookArgs.prepareData.platform));
   const platformName = (platformNameFromHookArgs || '').toLowerCase();
   const projectName = $projectData.projectName;
