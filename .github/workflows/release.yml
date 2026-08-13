@@ -1,7 +1,7 @@
 # =============================================================================
 # Release — @wuneo/nativescript-env → npmjs.org (public)
 # =============================================================================
-# Synchronized with neo-shared-tooling (templates/ts-lib/.github/workflows/release.yml)
+# Uses NPM Trusted Publisher (OIDC). No static NPM_TOKEN required!
 #
 # neo publish model — publishing is triggered by a git TAG, never by a branch
 # push. Pushing commits to release/** or develop starts NO workflow run;
@@ -10,13 +10,6 @@
 #   dev preview   develop    → v<ver>-dev.N   → dist-tag: dev
 #   pre-release   release/*   → v<ver>-alpha.N → dist-tag: alpha | beta | rc
 #   final         release/*   → v<ver>         → dist-tag: latest
-#
-# The tag is created ONLY on the `make release` version-bump commit (via `make tag push`),
-# so a tag always points at a real release. dist-tag is auto-selected by
-# `changeset publish` from .changeset/pre.json at the tagged commit.
-#
-# Required repo secret:
-#   NPM_TOKEN — an npm automation token with publish rights on the @wuneo scope.
 # =============================================================================
 name: Release
 
@@ -31,6 +24,7 @@ concurrency:
 
 permissions:
   contents: read
+  id-token: write # Required for NPM Trusted Publisher (OIDC)
 
 env:
   NODE_VERSION: '20'
@@ -52,12 +46,6 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
-          scope: '@wuneo'
-
-      - name: '🔑 Authenticate npm'
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
 
       - name: '📥 Install'
         run: pnpm install --frozen-lockfile
@@ -69,6 +57,3 @@ jobs:
 
       - name: '🚀 Publish (build + changeset publish)'
         run: pnpm release
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
