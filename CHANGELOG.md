@@ -1,5 +1,13 @@
 # @wuneo/nativescript-env
 
+## 1.0.1-beta.4
+
+### Patch Changes
+
+- 046d11d: # Changelog
+
+  - chore(ci): switch release workflow to NPM Trusted Publisher (OIDC) authentication
+
 ## 1.0.1-beta.3
 
 ### Patch Changes
