@@ -223,6 +223,22 @@ export function generateAppIcon(logger: any, appIconPath: string | undefined, pr
     const cmd = `ns resources generate icons ${fullAppIconPath}`;
     try {
       childProcess.execSync(cmd, { stdio: 'ignore' });
+
+      // Sync ic_launcher_monochrome.png if present in Android mipmap folders
+      const appResDir = projectData.appResourcesDirectoryPath || path.join(projectData.projectDir, 'App_Resources');
+      const androidResDir = path.join(appResDir, 'Android', 'src', 'main', 'res');
+      if (fs.existsSync(androidResDir)) {
+        const mipmapDirs = fs.readdirSync(androidResDir).filter((d) => d.startsWith('mipmap-'));
+        mipmapDirs.forEach((mipmapDir) => {
+          const dirPath = path.join(androidResDir, mipmapDir);
+          const foregroundPath = path.join(dirPath, 'ic_launcher_foreground.png');
+          const monochromePath = path.join(dirPath, 'ic_launcher_monochrome.png');
+          if (fs.existsSync(foregroundPath) && fs.existsSync(monochromePath)) {
+            fs.copyFileSync(foregroundPath, monochromePath);
+          }
+        });
+      }
+
       logger.info(`-o[NeoEnv]o--> Done generating app icon`);
     } catch (error) {
       throw new Error(`-o[NeoEnv]o--x Error generating app icon: ${error}`);
