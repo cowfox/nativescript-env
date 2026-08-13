@@ -23,32 +23,8 @@ export function updateAppBundleId(
 
   const projectDir = projectData?.projectDir || process.cwd();
 
-  // 1. Sync id in nativescript.config.ts or nativescript.config.js
-  const configTs = path.join(projectDir, 'nativescript.config.ts');
-  const configJs = path.join(projectDir, 'nativescript.config.js');
-  [configTs, configJs].forEach((cfgPath) => {
-    if (fs.existsSync(cfgPath)) {
-      try {
-        let content = fs.readFileSync(cfgPath, 'utf8');
-        const newContent = content.replace(/(id:\s*['"])[^'"]+(['"])/, `$1${resolvedId}$2`);
-        if (newContent !== content) {
-          fs.writeFileSync(cfgPath, newContent, 'utf8');
-        }
-      } catch (e) {}
-    }
-  });
-
-  // 2. Sync id in package.json "nativescript": { "id": "..." }
-  const pkgPath = path.join(projectDir, 'package.json');
-  if (fs.existsSync(pkgPath)) {
-    try {
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-      if (pkg.nativescript && pkg.nativescript.id && pkg.nativescript.id !== resolvedId) {
-        pkg.nativescript.id = resolvedId;
-        fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
-      }
-    } catch (e) {}
-  }
+  // Keep source project files (nativescript.config.ts / package.json) untouched on disk.
+  // We only update Node CLI memory and compiled target platform files under platforms/
 
   // 3. Sync applicationId in platforms/android/app/build.gradle
   const buildGradlePath = path.join(projectDir, 'platforms', 'android', 'app', 'build.gradle');
