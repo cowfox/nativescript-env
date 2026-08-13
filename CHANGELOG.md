@@ -1,5 +1,18 @@
 # @wuneo/nativescript-env
 
+## 1.0.1-beta.14
+
+### Patch Changes
+
+- a1aaba4: # Changelog
+
+  - chore(pkg): set base version to 1.0.1-beta.13
+  - fix(hooks): prevent duplicate execution of after-prepare hook
+  - fix(hooks): prevent duplicate execution of before-prepare hook within single CLI build pipeline
+  - chore(ci): configure token authentication for release workflow
+  - style(tooling): output commit message directly in changeset prompt
+  - fix(ci): remove registry-url from setup-node to enable seamless NPM Trusted Publisher (OIDC) auth
+
 ## 1.0.1-beta.4
 
 ### Patch Changes

@@ -4,6 +4,7 @@
 
 # Changelog
 
+- chore(pkg): set base version to 1.0.1-beta.13
 - fix(hooks): prevent duplicate execution of after-prepare hook
 - fix(hooks): prevent duplicate execution of before-prepare hook within single CLI build pipeline
 - chore(ci): configure token authentication for release workflow
