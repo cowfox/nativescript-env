@@ -2,25 +2,27 @@
 # makefiles/version.mk — 版本管理引擎 (Changesets)
 # ==============================================================================
 # Vendored & adapted from neo-shared-tooling (makefile-engines/node/version.mk).
-# 本仓库为 public,无法 subtree 私有 tooling repo,故直接拷贝该引擎。
-# 唯一改动:production 分支 main → master(本仓库用 master 作发布分支)。
+# 本仓库为 public, 无法 subtree 私有 tooling repo, 故直接拷贝该引擎。
 #
-# 单包库:MONOREPO / SCOPED_RELEASE 保持默认 0(读根 package.json,release/<ver>)。
+# 单包库: MONOREPO / SCOPED_RELEASE 保持默认 0 (读根 package.json, release/<ver>)。
+# RELEASE_VIA_TAG=1 (ts-lib): 发布只由 git tag 触发 (make tag push)。
 #
-# Pre-release 阶梯: dev → alpha → beta → rc → stable (只能顺着往前,不能倒退)
+# Pre-release 阶梯: dev → alpha → beta → rc → stable (只能顺着往前, 不能倒退)
 #   develop   → make pre dev          release/*  → make pre alpha / beta / rc
 #
 # 命令:
 #   make cut [minor|major]   → 从 develop 创建 release 分支
 #   make changeset [auto]    → 创建/自动生成 changeset
 #   make pre <tag>           → 进入/切换预发布阶段
-#   make release [push]      → 在当前 tag 下 bump + commit [+ push]
-#   make tag [push]          → 只为当前版本创建 git tag (不触发构建)
+#   make release [push]      → 在当前 tag 下 bump + commit [+ push 分支]
+#   make tag [push]          → 给 release commit 打 v<version> tag [+ push] 触发 CI 发布
 # ==============================================================================
 
-MONOREPO       ?= 0
-SCOPED_RELEASE ?= 0
-APP            ?= web
+MONOREPO        ?= 0
+SCOPED_RELEASE  ?= 0
+APP             ?= web
+# 1 → 发布由 tag 触发 (ts-lib); 0 → 分支触发 (web-monorepo / mobile-expo)
+RELEASE_VIA_TAG ?= 1
 
 # --- APP 自动推断: SCOPED_RELEASE=1 时从 release/<app>/<ver> 分支取 app ------------
 ifeq ($(SCOPED_RELEASE),1)
@@ -44,6 +46,13 @@ ifeq ($(SCOPED_RELEASE),1)
   RELEASE_PREFIX := release/$(APP)/
 else
   RELEASE_PREFIX := release/
+endif
+
+# --- 发布 tag 名前缀: 单包 v<ver>; scoped monorepo <app>-v<ver> ------------------
+ifeq ($(SCOPED_RELEASE),1)
+  TAG_NAME_PREFIX := $(APP)-v
+else
+  TAG_NAME_PREFIX := v
 endif
 
 GET_PKG_NAME = node -p "require('./$(PKG_JSON)').name"
@@ -107,7 +116,7 @@ cut: ## Create a release branch from develop (subcommands: patch, minor, major)
 	echo "🔀 创建分支: $$RELEASE_BRANCH"; \
 	git checkout -b "$$RELEASE_BRANCH"; \
 	echo "✅ 已切换到 $$RELEASE_BRANCH"; \
-	echo "💡 下一步: make pre alpha → make changeset auto → make release push"
+	if [ "$(RELEASE_VIA_TAG)" = "1" ]; then echo "💡 下一步: make pre alpha → make changeset auto → make release push → make tag push"; else echo "💡 下一步: make pre alpha → make changeset auto → make release push"; fi
 
 # -----------------------------------------------------------------------------
 # Changeset — 创建变更描述
@@ -160,7 +169,7 @@ else ifeq ($(SUBCMD),auto)
 	printf -- "---\n'$$PKG_NAME': $$BUMP\n---\n\n# Changelog\n\n$$NOTES\n" > "$$FILENAME"; \
 	echo "✅ 已生成: $$FILENAME"; echo ""; \
 	cat "$$FILENAME"; echo ""; \
-	if [ -n "$$COMMITS" ]; then git add .changeset/; echo "✅ 已暂存 changeset"; fi
+	if [ -n "$$COMMITS" ]; then git add .changeset/; echo "✅ 已暂存 changeset"; fi; echo ""; echo "💡 建议提交 (changeset):"; echo "   git commit -m \"🐳 chore(changeset): Add new changeset\""
 else
 	@BRANCH=$$($(GET_BRANCH)); \
 	if [ "$$BRANCH" = "master" ]; then \
@@ -168,6 +177,9 @@ else
 		exit 1; \
 	fi
 	pnpm changeset
+	@echo ""
+	@echo "💡 建议提交 (changeset):"
+	@echo "   git commit -m \"🐳 chore(changeset): Add new changeset\""
 endif
 
 # -----------------------------------------------------------------------------
@@ -293,19 +305,75 @@ release: ## Bump pre-release version and commit (subcommand: push → also push)
 		git commit --no-verify -m "🐳 chore(release): Bump version to \`$$VERSION\`"; \
 	fi; \
 	if [ "$(SUBCMD)" = "push" ]; then \
-		echo "🚀 Pushing to remote..."; \
+		echo "🚀 Pushing branch to remote..."; \
 		git push -u origin "$$BRANCH"; \
-		echo "✅ 已推送 $$VERSION → CI 将自动构建/发布"; \
+		if [ "$(RELEASE_VIA_TAG)" = "1" ]; then \
+			echo "✅ 已推送 $$VERSION 到 $$BRANCH (分支 push 不触发发布)"; \
+			echo "💡 发布这一版: make tag push  (打 $(TAG_NAME_PREFIX)$$VERSION 并 push → 触发 CI 发布)"; \
+		else \
+			echo "✅ 已推送 $$VERSION → CI/Vercel 将自动构建/部署"; \
+		fi; \
 	else \
-		echo "✅ 本地 commit 完成: $$VERSION  (推送: make release push)"; \
+		echo "✅ 本地 commit 完成: $$VERSION"; \
+		if [ "$(RELEASE_VIA_TAG)" = "1" ]; then \
+			echo "💡 下一步: make release push  然后  make tag push  (tag 触发发布)"; \
+		else \
+			echo "💡 推送: make release push"; \
+		fi; \
 	fi
 
 # -----------------------------------------------------------------------------
-# Tag — 只为当前版本创建 git tag (不触发任何构建/部署)
+# Tag — 给 release commit 打 v<version> tag
 # -----------------------------------------------------------------------------
 
 .PHONY: tag
-tag: ## Create git tag(s) for the current package version(s) (subcommand: push)
+tag: ## Tag the release commit → v<version> [push] (RELEASE_VIA_TAG=1: push triggers CI publish)
+ifeq ($(RELEASE_VIA_TAG),1)
+	@BRANCH=$$($(GET_BRANCH)); \
+	IS_RELEASE=$(IS_RELEASE_BRANCH); \
+	VERSION=$$($(GET_VERSION)); \
+	TAG_NAME="$(TAG_NAME_PREFIX)$$VERSION"; \
+	HEAD_MSG=$$(git log -1 --format=%s HEAD); \
+	if ! echo "$$HEAD_MSG" | grep -q "chore(release): Bump"; then \
+		echo "❌ make tag 只能在 release commit 上打 tag。"; \
+		echo "   当前 HEAD: $$HEAD_MSG"; \
+		echo "   请先 make release 生成版本 bump commit, 再 make tag。"; \
+		exit 1; \
+	fi; \
+	if ! echo "$$HEAD_MSG" | grep -qF "$$VERSION"; then \
+		echo "❌ package.json 版本 ($$VERSION) 与 HEAD release commit 不一致:"; \
+		echo "   $$HEAD_MSG"; \
+		echo "   请确认 HEAD 是最近一次 make release 的 commit。"; \
+		exit 1; \
+	fi; \
+	if [ "$$BRANCH" = "master" ]; then \
+		echo "❌ master 分支不打发布 tag (发布走 develop / release/*)。"; exit 1; \
+	elif [ "$$BRANCH" = "develop" ]; then \
+		if ! echo "$$VERSION" | grep -q -- "-dev\."; then \
+			echo "❌ develop 只能 tag dev 预发布 (如 $(TAG_NAME_PREFIX)1.2.0-dev.0)  当前: $$VERSION"; \
+			echo "   💡 先 make pre dev"; exit 1; \
+		fi; \
+	elif [ "$$IS_RELEASE" = "yes" ]; then \
+		if echo "$$VERSION" | grep -q -- "-dev\."; then \
+			echo "❌ release/* 不能 tag dev 版本  当前: $$VERSION"; exit 1; \
+		fi; \
+	else \
+		echo "❌ 当前分支不允许打发布 tag: $$BRANCH"; exit 1; \
+	fi; \
+	if git rev-parse -q --verify "refs/tags/$$TAG_NAME" >/dev/null 2>&1; then \
+		echo "❌ tag 已存在: $$TAG_NAME (同一版本请勿重复 tag)。"; exit 1; \
+	fi; \
+	echo "🏷️  创建 tag: $$TAG_NAME  ($$BRANCH)"; \
+	git tag -a "$$TAG_NAME" -m "Release $$TAG_NAME"; \
+	echo "✅ Tag $$TAG_NAME 已创建"; \
+	if [ "$(SUBCMD)" = "push" ]; then \
+		echo "📤 推送 tag 到远程 (触发 CI 发布)..."; \
+		git push origin "$$TAG_NAME"; \
+		echo "✅ 已推送 $$TAG_NAME → CI 将构建并发布"; \
+	else \
+		echo "💡 推送 tag: git push origin $$TAG_NAME  或: make tag push"; \
+	fi
+else
 	@echo "🏷️  创建 tag (pnpm changeset tag)..."; \
 	pnpm changeset tag; \
 	if [ "$(SUBCMD)" = "push" ]; then \
@@ -313,3 +381,4 @@ tag: ## Create git tag(s) for the current package version(s) (subcommand: push)
 	else \
 		echo "💡 推送 tag: git push --tags  或: make tag push"; \
 	fi
+endif
