@@ -1,30 +1,19 @@
 # =============================================================================
 # Release — @wuneo/nativescript-env → npmjs.org (public)
 # =============================================================================
-# Adapted from neo-shared-tooling (templates/ts-lib/release.yml), re-pointed from
-# GitHub Packages to the public npm registry.
+# Synchronized with neo-shared-tooling (templates/ts-lib/.github/workflows/release.yml)
 #
-# neo publish model — ALL versions publish from release/**:
-#   alpha → beta → rc → final release. develop optionally publishes `dev`
-#   previews. master is CI-only and NEVER publishes.
+# neo publish model — publishing is triggered by a git TAG, never by a branch
+# push. Pushing commits to release/** or develop starts NO workflow run;
+# only `make tag push` (or pushing git tag v*) triggers CI publishing.
 #
-# Dist-tags (auto-selected by `changeset publish` from .changeset/pre.json):
-#   release/*  → alpha | beta | rc   (1.1.0-alpha.0)   → final: latest (1.1.0)
-#   develop    → dev                 (1.1.0-dev.0)
+#   dev preview   develop    → v<ver>-dev.N   → dist-tag: dev
+#   pre-release   release/*   → v<ver>-alpha.N → dist-tag: alpha | beta | rc
+#   final         release/*   → v<ver>         → dist-tag: latest
 #
-# Flow (see this repo's Makefile):
-#   release/*  make pre alpha → make changeset auto && git commit → make release push
-#   final      make pre exit  → make release push        (version drops -alpha → latest)
-#   develop    make pre dev   → make changeset auto && git commit → make release push
-#
-# `changeset publish` is idempotent: an already-published version is skipped.
-#
-# Trigger — unified release logic:
-#   Publishing runs ONLY when the version-bump commit produced by `make release`
-#   lands on release/** or develop, i.e. the pushed head commit message is
-#   "🐳 chore(release): Bump version to `<version>`". Any other push to these
-#   branches (feature merges, changeset commits, stray package.json edits) starts
-#   a run that immediately skips — so nothing publishes without an explicit bump.
+# The tag is created ONLY on the `make release` version-bump commit (via `make tag push`),
+# so a tag always points at a real release. dist-tag is auto-selected by
+# `changeset publish` from .changeset/pre.json at the tagged commit.
 #
 # Required repo secret:
 #   NPM_TOKEN — an npm automation token with publish rights on the @wuneo scope.
@@ -33,9 +22,8 @@ name: Release
 
 on:
   push:
-    branches:
-      - 'release/**'
-      - develop
+    tags:
+      - 'v*'
 
 concurrency:
   group: release-${{ github.ref }}
@@ -51,9 +39,6 @@ jobs:
   release:
     name: '🚀 Release'
     runs-on: ubuntu-latest
-    # Only the `make release` version-bump commit triggers a publish. Matched on
-    # the stable ASCII core of the message (emoji-agnostic, case-sensitive).
-    if: "contains(github.event.head_commit.message, 'chore(release): Bump version to')"
     steps:
       - name: '📥 Checkout'
         uses: actions/checkout@v4
@@ -77,23 +62,12 @@ jobs:
       - name: '📥 Install'
         run: pnpm install --frozen-lockfile
 
-      # develop only publishes pre-releases (dev). Final (stable) releases must
-      # come from release/**, so a stable version pushed to develop is skipped.
-      - name: '🔍 Resolve version + guard'
-        id: guard
+      - name: '🔍 Resolve version'
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          if [ "${{ github.ref }}" = "refs/heads/develop" ] && ! echo "$VERSION" | grep -q '-'; then
-            echo "publish=false" >> "$GITHUB_OUTPUT"
-            echo "⏭️ develop + stable version ($VERSION) → skip (final releases go on release/**)"
-          else
-            echo "publish=true" >> "$GITHUB_OUTPUT"
-            echo "📦 Publishing $VERSION"
-          fi
+          echo "📦 Publishing $VERSION (tag: ${GITHUB_REF_NAME})"
 
       - name: '🚀 Publish (build + changeset publish)'
-        if: steps.guard.outputs.publish == 'true'
         run: pnpm release
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
