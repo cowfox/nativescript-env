@@ -224,6 +224,7 @@ async function generateAdaptiveForeground(
   fullAppIconPath: string,
   targetWidth: number,
   targetHeight: number,
+  legacyLauncherPath: string,
   foregroundPath: string,
   monochromePath?: string
 ): Promise<void> {
@@ -251,6 +252,10 @@ async function generateAdaptiveForeground(
     const x = Math.round((targetWidth - safeWidth) / 2);
     const y = Math.round((targetHeight - safeHeight) / 2);
     canvas.composite(scaledImage, x, y);
+
+    // Overwrite legacy ic_launcher.png with clean 100% scaled image directly from source icon (eliminates NS CLI white border)
+    const legacyCleanImage = srcImage.clone().resize({ w: targetWidth, h: targetHeight });
+    await legacyCleanImage.write(legacyLauncherPath as any);
 
     await canvas.write(foregroundPath as any);
     if (monochromePath) {
@@ -288,6 +293,7 @@ export async function generateAppIcon(logger: any, appIconPath: string | undefin
                 fullAppIconPath,
                 legacyImg.bitmap.width,
                 legacyImg.bitmap.height,
+                legacyLauncherPath,
                 foregroundPath,
                 fs.existsSync(monochromePath) ? monochromePath : undefined
               );
