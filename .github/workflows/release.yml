@@ -1,0 +1,93 @@
+# =============================================================================
+# Release — @wuneo/nativescript-env → npmjs.org (public)
+# =============================================================================
+# Adapted from neo-shared-tooling (templates/ts-lib/release.yml), re-pointed from
+# GitHub Packages to the public npm registry.
+#
+# neo publish model — ALL versions publish from release/**:
+#   alpha → beta → rc → final release. develop optionally publishes `dev`
+#   previews. master is CI-only and NEVER publishes.
+#
+# Dist-tags (auto-selected by `changeset publish` from .changeset/pre.json):
+#   release/*  → alpha | beta | rc   (1.1.0-alpha.0)   → final: latest (1.1.0)
+#   develop    → dev                 (1.1.0-dev.0)
+#
+# Flow (see this repo's Makefile):
+#   release/*  make pre alpha → make changeset auto && git commit → make release push
+#   final      make pre exit  → make release push        (version drops -alpha → latest)
+#   develop    make pre dev   → make changeset auto && git commit → make release push
+#
+# `changeset publish` is idempotent: an already-published version is skipped.
+#
+# Trigger — unified release logic:
+#   Publishing runs ONLY when the version-bump commit produced by `make release`
+#   lands on release/** or develop, i.e. the pushed head commit message is
+#   "🐳 chore(release): Bump version to `<version>`". Any other push to these
+#   branches (feature merges, changeset commits, stray package.json edits) starts
+#   a run that immediately skips — so nothing publishes without an explicit bump.
+#
+# Required repo secret:
+#   NPM_TOKEN — an npm automation token with publish rights on the @wuneo scope.
+# =============================================================================
+name: Release
+
+on:
+  push:
+    branches:
+      - 'release/**'
+      - develop
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  release:
+    name: '🚀 Release'
+    runs-on: ubuntu-latest
+    # Only the `make release` version-bump commit triggers a publish. Matched on
+    # the stable ASCII core of the message (emoji-agnostic, case-sensitive).
+    if: contains(github.event.head_commit.message, 'chore(release): Bump version to')
+    steps:
+      - name: '📥 Checkout'
+        uses: actions/checkout@v4
+
+      - name: '🔧 Setup pnpm'
+        uses: pnpm/action-setup@v4
+
+      - name: '🟢 Setup Node.js + npm registry'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: '📥 Install'
+        run: pnpm install --frozen-lockfile
+
+      # develop only publishes pre-releases (dev). Final (stable) releases must
+      # come from release/**, so a stable version pushed to develop is skipped.
+      - name: '🔍 Resolve version + guard'
+        id: guard
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.ref }}" = "refs/heads/develop" ] && ! echo "$VERSION" | grep -q '-'; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "⏭️ develop + stable version ($VERSION) → skip (final releases go on release/**)"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            echo "📦 Publishing $VERSION"
+          fi
+
+      - name: '🚀 Publish (build + changeset publish)'
+        if: steps.guard.outputs.publish == 'true'
+        run: pnpm release
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
