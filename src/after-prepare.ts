@@ -68,4 +68,7 @@ export = async function ($logger: any, $projectData: any, hookArgs: any) {
 
   // Restore original project configuration files (nativescript.config.ts / package.json)
   processes.restoreAppBundleIdBackup($logger, $projectData);
+
+  // Reset flag for future hook runs
+  delete process.env.NEO_ENV_HOOK_RUNNING;
 };
