@@ -1,170 +1,260 @@
+# @wuneo/nativescript-env
 
-# nativescript-multiple-environments-building
+[![NPM version](https://img.shields.io/npm/v/@wuneo/nativescript-env.svg)](https://www.npmjs.com/package/@wuneo/nativescript-env)
+[![License](https://img.shields.io/npm/l/@wuneo/nativescript-env.svg)](LICENSE)
+[![Downloads](https://img.shields.io/npm/dm/@wuneo/nativescript-env.svg)](https://www.npmjs.com/package/@wuneo/nativescript-env)
 
-[![NPM version][npm-image]][npm-url]
-[![Downloads][downloads-image]][npm-url]
+The complete environment management plugin for **NativeScript 8+**. Effortlessly switch **App IDs**, **App Icons**, and **Environment-Specific Resources** (such as `GoogleService-Info.plist`, `google-services.json`, or API environment configs) per build command!
 
-[npm-image]:http://img.shields.io/npm/v/nativescript-multiple-environments-building.svg
-[npm-url]:https://www.npmjs.com/package/nativescript-multiple-environments-building
-[downloads-image]:http://img.shields.io/npm/dm/nativescript-multiple-environments-building.svg
+---
 
-This Hook aims to provide a better support for building a [NativeScript](https://nativescript.org/) application with multiple environments, such as:
+## 🚀 Why @wuneo/nativescript-env?
 
-- Easily use different `App Bundle ID` in different environments.
-- Quickly apply the `Version #` from `package.json` to the actual destinations (`Info.plist` on `iOS` and `AndroidManifest.xml` on `Android`).
-  - With the new `autoBuildNumber` config, you could easily auto generate a `Version Code` and use it when in the **RELEASE** mode.
-- Safely configure the **File Copying** strategies to any type of file under different environments, like:
-  - Using diff. `Info.plist` or `strings.xml` to set diff. **App Name** or other configs.
-  - Having dif. `GoogleService-Info.plist` for Google services.
-- Simply generate dedicated **App Icon** image for each environment.
+* ❌ **Without this plugin**: You have to manually edit `nativescript.config.ts`, rename `GoogleService-Info.plist` / `google-services.json`, or copy icons every time you switch between Dev, Staging, and Production builds.
+* ✅ **With this plugin**: Simply pass `--env.use.<name>` in your CLI command (`ns run android --env.use.staging`). Everything—from **App ID** to **native resources** and **icons**—is swapped automatically with zero manual effort!
 
-> Credits to [federicorp](https://github.com/federicorp), the original creator of this amazing idea (via [@nativescript-dev/multiple-environments](https://github.com/federicorp/nativescript-dev-multiple-env)), as well as [jitendraP-ashutec](https://github.com/jitendraP-ashutec) who helped add the support to separate env. rule files for `iOS` and `Android` (via [@nativescript-dev/multiple-environments](https://github.com/jitendraP-ashutec/nativescript-dev-multiple-env)).
+---
 
-## Installation
+## ⚡️ Quick Start
+
+### 1. Installation
 
 ```bash
-npm i nativescript-multiple-environments-building --save-dev
+npm i @wuneo/nativescript-env --save-dev
+# or
+yarn add @wuneo/nativescript-env --dev
 ```
 
-## How to use?
+### 2. Initialize Configuration File
 
-Add two **Env Rules** files into the project's root folder, and they will contain the configurations for `iOS` and `Android` separately.
-
-- `environment-rules.ios.json` - for `iOS`.
-- `environment-rules.android.json` - for `Android`.
-
-An example **Env Rules** file looks like this:
-
-```json
-{
-    "version": "1.6.6",
-    "buildNumber": "66",
-    "versionCode": "1060666",
-    "autoVersionCode": true,
-    "default": "staging",
-    "extraPaths": [
-        "environments"
-    ],
-    "directCopyRules": {
-        "Info.plist": "App_Resources/iOS/Info.plist",
-    },
-    "appIconPath": "environments/app-icon/icon.png",
-    "envFilesMatchRules": "staging|release",
-    "environments": [
-        {
-            "name": "staging",
-            "appBundleId": "org.nativescript.appId.staging",
-            "matchRules": "(.*\\.staging\\..*)"
-        },
-        {
-            "name": "release",
-            "appBundleId": "org.nativescript.appId.release",
-            "matchRules": "(.*\\.release\\..*)"
-        }
-    ]
-}
-```
-
-With it, using `--env.use.ENV_NAME` to specify the actual environment to process while **{NS}** doing the `prepare` process. For example:
+Run the initialization command in your NativeScript project root:
 
 ```bash
-# Debug iOS app with `staging` env. configs.
-ns debug ios --env.use.staging
-
-# Build a final release
-ns run ios --bundle --env.aot --env.uglify --env.use.release
+npx wuneo-env init
 ```
 
-## Environment rules
+This will create an `environment-rules.yaml` template file in your project root with detailed explanatory comments.
 
-The **Env Rules** file currently support the following configurations:
+*(No modifications to `nativescript.config.ts` required! The plugin automatically manages App IDs, assets, and resources in the background during build time.)*
 
-- `default` - The default `Env. Name` to use if the `cmd` does not include `--env.use.ENV_NAME`.
-- `extraPaths` - The additional paths to check the `env.` files and do the file copy if needed. For example, adding `environments` will help choose right `environment.ts` for `Angular` to use.
-  - By default, it checks the `App_Resources` folder. And the `extraPaths` will help cover other places.
-  - The paths in `extraPaths` are relative to the `project root folder`.
-- `environments` - It defines for each environment, including:
-  - `name` - The `Env. Name`, used by `--env.use.ENV_NAME`.
-  - `appBundleId` - The target **App Bundle ID**.
-  - `matchRules` - The matching rule to help find the `source env. file` and do the file copy.
-    - For example, `(.*\\.staging\\..*)` will help locate the file `Info.staging.plist`.
-- `directCopyRules` - The **direct copying rules** conducted **AFTER** the normal file copy. Typically, it is used to help prepare the files on `iOS`.
-  - Each `pair` includes two parts: the `source filename` and the `destination path` (relative to the `project root folder`).
-  - For example: `{ "Info.plist":"App_Resources/iOS/Info.plist" }` means to copy the `Info.plist` to the `App_Resources` folder once it gets copied from its `env.` version (like `Info.dev.plist`).
-  - **NOTE**: The **direct file copying** ONLY happens after done a **normal file copy**. In other words, if the `source filename` is not for a output file of a **normal file copy**, it will be ignored.
-- `appIconPath` - The `file path` used for `ns resources generate icons` CMD. This is very useful when the app has diff. **App Icon** under diff. environments on `IOS`.
-  - Still, the `path` is relative to the `project root folder`.
-  - **NOTE**: On `Android`, the diff. **App Icon** under diff. environments could be still inside the `App_Resources` folder which could be safely deleted **AFTER** the `prepare` process.
-- `envFilesMatchRules` - The specific `matching rules` to help identify all the `env.` files that could be deleted **AFTER** a `prepare`.
-  - For example, if the `matchRules` use the words (`dev` and `release`) to help identify the `env` files, the value of `envFilesMatchRules` should be `dev|release`.
-  - **NOTE**: This should be an `Android` ONLY config. On `iOS`, it more relies on `directCopyRules` config to help achieve the goals.
-  - If not set, it will use the default value - `development|dev|edge|test|uat|beta|staging|sta|release|prod|production`.
-- `version` - The version #, same as the one in the `package.json`.
-- `buildNumber` - The build # that changes each time when building the app.
-- `versionCode` - The version code that is used to fill `CFBundleVersion` (on `iOS`) or `VersionCode` (on `Android`).
-- `autoVersionCode` - The flag to indicate if using the built-in logic to auto generate `Version Code` based on `Version #` and `Build #`.
+---
 
-## Discussions
+### ⚙️ Environment Configuration (`environment-rules.yaml` or `.json`)
 
-### Usage of `directCopyRules`
+You can use either **`environment-rules.yaml`** (recommended for adding comments) or `environment-rules.json`:
 
-Given the case that the `ns prepare` process will add all files inside the `App_Resources/iOS` folder into the Xcode project which will include all `env. files` for other environments, the rules inside `directCopyRules` will help conduct the file copy **OUTSIDE** the `App_Resources/iOS` folder.
+```yaml
+# ==============================================================================
+# NativeScript Environment Rules Configuration (@wuneo/nativescript-env)
+# ==============================================================================
 
-And for `Android`, since it still can be safe to delete those `env. files` **AFTER** the `ns prepare` process, the **deletion** process is just simply added to the `after-prepare` Hook.
+# App Version & Build Numbers
+version: "6.10.0"
+buildNumber: "6"
+autoVersionCode: true
 
-In other words, `directCopyRules` would be probably used on `iOS` side unless you are still having some other needs for `Android`.
+# Default active environment when no CLI flag (e.g. --env.use.<env>) is specified
+default: "development"
 
-### App Icon Generation
+# Extra directories to scan for environment-specific file overrides (e.g. environment.dev.ts -> environment.ts)
+extraPaths:
+  - "environments"
 
-The generation of **App Icon** is conducted by the built-in **{NS}** CMD - `ns resources generate icons`.
+# Direct file copy mappings (Source file in env folder -> Destination file in project)
+directCopyRules:
+  Info.plist: "App_Resources/iOS/Info.plist"
+  GoogleService-Info.plist: "App_Resources/iOS/GoogleService-Info.plist"
+  Podfile: "App_Resources/iOS/Podfile"
 
-By default, if the `icon.png` file is inside the `App_Resources` folder for both `iOS` and `Android`, the process can help prepare the **App Icon** files for both `iOS` and `Android`. However, the **NEW** `Android` OS versions are actually NOT using `icon.png` to be the App Icon. Instead, it uses a `mipmap` style (by an `xml` file to define both `foreground` and `background`). Luckily, the new method could be still under the realm of `env. based file copying`.
+# Master App Icon path (Automatically resizes for iOS & Android)
+appIconPath: "environments/app-icon/icon.png"
 
-Example of `ic_launcher.xml` file:
+# Environment Definitions
+environments:
+  - name: "development"
+    appBundleId: "com.example.app.dev"
 
-```xml
-<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@color/ic_launcher_background"/>
-    <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
-</adaptive-icon>
+  - name: "staging"
+    appBundleId: "com.example.app.staging"
 
+  - name: "release"
+    appBundleId:
+      android: "com.example.app.android"
+      ios: "com.example.app.ios"
 ```
 
-> **NOTE**: In order to make the `ns resources generate icons` CMD working, please be sure to **NOT** delete the default `icon.png` files from `App_Resources` folder. Otherwise, the generation process may fail!!!
+### 4. Build Your App
 
-### App Versioning
+```bash
+# Build for Development (Uses default env)
+ns run android
 
-With the new added related **Version Info** of the **Env Rules** file, now you could manage the **App Version** in the following ways:
-
-- The `Manual` way - Enter a free value to those fields into the **Env Rules** file every time **BEFORE** the app building.
-  - In this way, set the flag `autoVersionCode` to `false` and totally ignore `buildNumber`.
-- The `Auto` way - By setting `autoVersionCode` to `true`, before the app building, it will **automatically** generate a new `Version Code` based on the given values of `Version #` and `Build #`.
-  - For example, a version # (`1.16.6`) and build # (`22`) will generate a new `Version Code` as `1160622`.
-
-For `buildNumber`,
-
-- It is a number between `0` and `99`.
-- When the app gets building, if the `Version #` does not change, it will be added by `1` automatically.
-  - If changed, it will be reset to `1` from the start - meaning "the **FIRST** build of the new version".
-
-> **NOTES**:
->
-> - In order to make the `Version Code` generation process works, the `miner`, `patch` parts of `Version #` and `Build #` should not exceed `99`. This limitation should cover most of the cases - typically you may have already bumped the upper part of the version number.
-> - The whole updating logic of `Build #` and `Version Code` is ONLY used in the **RELEASE** mode!! With it, it will not bring too much hassle while in the **Dev** mode.
-> - With the "NEW" Android building structure, the "version info" could be added to the `gradle` file. In other words, we could simply update them **BEFORE** the `prepare` process.
-
-```
-// Example of adding "version info" to `gradle` file
-android {
-  defaultConfig {
-    // Version Information
-    versionCode 1060606
-    versionName "1.6.6"
-  }
-}
+# Build for Staging / Release
+ns run ios --env.use.release
 ```
 
-Also, the `iOS` and `Android` manage their **Version Info** separately. In the normal case, if you build the app against both platforms at the same time, the generated `Version Code` (as well as the `buildNumber`) should be identical for each release. However, if it does not (due to some unexpected reasons), it should be very easy to fix it by **Manually** change it to a correct value inside the **Env Rules** file.
+---
 
-<hr>
-<h3 align="center">Made with ❤️ for the NativeScript community</h3>
+## 📂 Deep Dive: Managing Environment Files & Native Resources
+
+This plugin provides two complementary mechanisms for managing environment-specific files: **`extraPaths`** and **`directCopyRules`**.
+
+### 1. `extraPaths` (Suffix-Based In-Place File Swapping)
+
+In your source code (e.g. `src/environments/` or `app/`), you can keep environment-specific variants alongside your base files.
+
+#### Project File Structure Example:
+```text
+my-project/
+├── environments/
+│   ├── environment.ts            <-- Base file (Imported in your JS/TS code)
+│   ├── environment.dev.ts        <-- Active when --env.use.development
+│   ├── environment.staging.ts    <-- Active when --env.use.staging
+│   └── environment.release.ts    <-- Active when --env.use.release
+```
+
+#### How it works:
+When `extraPaths: ["environments"]` is set and you build with `--env.use.staging`:
+1. The plugin finds `environment.staging.ts`.
+2. It overwrites `environment.ts` with the contents of `environment.staging.ts`.
+3. In `after-prepare`, all `*.staging.ts`, `*.dev.ts`, etc. files are automatically filtered out from the final native build bundle to keep production binaries clean.
+
+---
+
+### 2. `directCopyRules` (Native Resource Overrides for iOS & Android)
+
+Native resources for iOS and Android often require exact filenames placed in specific directories (like `App_Resources/iOS` or `App_Resources/Android`).
+
+#### Project File Structure Example:
+```text
+my-project/
+├── environments/
+│   ├── iOS/
+│   │   ├── Info.dev.plist
+│   │   ├── Info.release.plist
+│   │   ├── GoogleService-Info.dev.plist
+│   │   ├── GoogleService-Info.release.plist
+│   │   ├── Podfile.dev
+│   │   └── Podfile.release
+│   └── Android/
+│       ├── google-services.dev.json
+│       └── google-services.release.json
+```
+
+#### Configuration Example in `environment-rules.yaml`:
+```yaml
+directCopyRules:
+  # iOS Resources
+  Info.plist: "App_Resources/iOS/Info.plist"
+  GoogleService-Info.plist: "App_Resources/iOS/GoogleService-Info.plist"
+  Podfile: "App_Resources/iOS/Podfile"
+
+  # Android Resources
+  google-services.json: "App_Resources/Android/google-services.json"
+```
+
+#### How iOS & Android Resource Management Works:
+- **iOS (`Info.plist`, `GoogleService-Info.plist`, `Podfile`)**:
+  During `before-prepare`, the plugin matches `Info.<env>.plist` inside your `environments/` directory and copies it directly to `App_Resources/iOS/Info.plist`. Xcode / CocoaPods then picks up the updated file during compile time.
+- **Android (`google-services.json`)**:
+  Android's Google Services Gradle plugin (`com.google.gms.google-services`) requires `google-services.json` to be physically present at `App_Resources/Android/google-services.json`. The plugin copies `google-services.<env>.json` $\rightarrow$ `App_Resources/Android/google-services.json` before Gradle tasks execute, ensuring Firebase & Push Notifications build seamlessly per environment.
+
+---
+
+## 🛠 Features & Capabilities
+
+- 🎯 **Dynamic App Bundle ID**: Set per-environment App IDs directly in `environment-rules.yaml`, with optional platform overrides (`{ "android": "...", "ios": "..." }`).
+- 📁 **Smart File Swapping**: Automatically matches files like `environment.staging.ts` $\rightarrow$ `environment.ts` or `GoogleService-Info.dev.plist` $\rightarrow$ `GoogleService-Info.plist` during build.
+- 🎨 **App Icon Generation**: Integrates with NativeScript resource generator to build environment-specific App Icons automatically.
+- 🔢 **Auto Versioning**: Manages `versionName`, `versionCode`, and `buildNumber` across builds.
+- ⚡️ **Zero Code Modifications**: Built natively for NativeScript 8+ with zero runtime overhead or `nativescript.config.ts` hacks.
+
+---
+
+## 📖 Configuration Reference (`environment-rules.yaml` / `.json`)
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `default` | `string` | Default environment name if `--env.use.<name>` is omitted. |
+| `environments` | `Array` | Environment definitions (`name`, `appBundleId`, optional `matchRules`). |
+| `environments[].appBundleId` | `string` \| `object` | App Bundle ID string or `{ "android": "...", "ios": "..." }`. |
+| `environments[].matchRules` | `string` (Optional) | Custom regex matching pattern (Auto-derived as `.*\.name\..*` if omitted). |
+| `extraPaths` | `string[]` | Additional directories outside `App_Resources` to process suffix file swapping. |
+| `directCopyRules` | `Record<string, string>` | Direct file copy mappings after standard environment file swap. |
+| `appIconPath` | `string` | Master icon file path to generate platform app icons. |
+
+---
+
+## 📦 Legacy Support (NativeScript 6/7)
+
+If you are using NativeScript 7 or older, please install version `0.8.2` of the legacy package:
+
+```bash
+npm i nativescript-multiple-environments-building@0.8.2 --save-dev
+```
+
+For legacy documentation and usage instructions, please refer to the [v0.8.2 Git Tag Documentation](https://github.com/cowfox/nativescript-multiple-environments-building/tree/v0.8.2#readme).
+
+---
+
+## 🧑‍💻 Development & Release
+
+This package uses **[pnpm](https://pnpm.io)** + **[Changesets](https://github.com/changesets/changesets)**
+for versioning, and publishes to **npmjs.org** via GitHub Actions. A `Makefile` (neo shared
+tooling, vendored under `makefiles/`) wraps the common commands.
+
+### Local setup
+
+```bash
+pnpm install          # or: make install
+make build            # compile src/ -> lib/ (tsc)
+make type             # tsc --noEmit
+make exports          # validate published exports (attw + publint)
+make ci               # type + test + build
+make help             # list all commands
+```
+
+### Branch model
+
+| Branch        | Purpose                                  | Publishes            |
+| ------------- | ---------------------------------------- | -------------------- |
+| `master`      | production line                          | CI only (no publish) |
+| `develop`     | integration                              | `dev` pre-releases   |
+| `release/*`   | release stabilization                    | `alpha` → `beta` → `rc` → `latest` |
+| `feature/*`   | working branches                         | —                    |
+
+### Cutting a release
+
+```bash
+# 1. From develop — create a release branch (patch by default; minor / major)
+make cut minor                 # -> release/1.1.0
+
+# 2. On the release branch — enter pre-release mode
+make pre alpha
+
+# 3. Generate a changeset from your commits, then commit it
+make changeset auto
+git commit -m "🐳 chore(changeset): Add new changeset"
+
+# 4. Bump the version + push → CI publishes the alpha to npm
+make release push              # 1.1.0-alpha.0  (dist-tag: alpha)
+
+# 5. Iterate (beta / rc) as needed, then ship the final release
+make pre exit
+make release push              # 1.1.0          (dist-tag: latest)
+```
+
+`changeset publish` (run in CI on push to `release/**` / `develop` when `package.json`
+changes) auto-selects the npm dist-tag from `.changeset/pre.json`, and is idempotent —
+an already-published version is skipped.
+
+### CI secret
+
+Add a repository secret **`NPM_TOKEN`** — an npm **automation** token with publish rights
+on the `@wuneo` scope. The release workflow uses it as `NODE_AUTH_TOKEN`.
+
+---
+
+## 📄 License
+
+Apache-2.0 © [cowfox](https://github.com/cowfox)

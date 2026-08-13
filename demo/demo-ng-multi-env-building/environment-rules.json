@@ -1,0 +1,27 @@
+{
+    "version": "1.6.6",
+    "buildNumber": "6",
+    "versionCode": "1060606",
+    "autoVersionCode": false,
+    "default": "development",
+    "extraPaths": [
+        "app_res_env",
+        "src/environments"
+    ],
+    "environments": [
+        {
+            "name": "development",
+            "appBundleId": {
+                "android": "org.nativescript.demo.multienvbuilding.dev",
+                "ios": "org.nativescript.demo.multienvbuilding.dev"
+            }
+        },
+        {
+            "name": "release",
+            "appBundleId": {
+                "android": "org.nativescript.demo.multienvbuilding",
+                "ios": "org.nativescript.demo.multienvbuilding"
+            }
+        }
+    ]
+}

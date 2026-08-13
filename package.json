@@ -1,55 +1,108 @@
 {
-  "name": "nativescript-multiple-environments-building",
-  "version": "0.8.0",
-  "description": "A better solution to make Nativescript to support multiple environments during the building process.",
+  "name": "@wuneo/nativescript-env",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "description": "The complete multi-environment management plugin for NativeScript 8+. Dynamically switch App IDs, Google Services, Podfiles, Info.plist, AndroidManifest, strings.xml, app icons, and env configs per build.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cowfox/nativescript-multiple-environments-building.git"
+    "url": "git+https://github.com/cowfox/nativescript-env.git"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "files": [
+    "lib",
+    "postinstall.js",
+    "preuninstall.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "bin": {
+    "wuneo-env": "lib/cli.js",
+    "nativescript-env": "lib/cli.js"
+  },
+  "exports": {
+    ".": "./lib/index.js",
+    "./helper": "./lib/helper.js",
+    "./lib/*": "./lib/*.js",
+    "./*": "./lib/*.js"
   },
   "nativescript": {
     "hooks": [
       {
         "type": "before-prepare",
-        "script": "lib/before-prepare.js",
+        "script": "lib/before-prepare",
         "inject": true
       },
       {
         "type": "after-prepare",
-        "script": "lib/after-prepare.js",
+        "script": "lib/after-prepare",
         "inject": true
       }
     ]
   },
   "keywords": [
     "nativescript",
+    "ns",
+    "ns8",
+    "ns9",
+    "nativescript-plugin",
+    "environment-variables",
+    "multi-environment",
     "multiple-environments",
-    "app-building",
-    "app-bundle-id",
+    "app-id",
+    "bundle-id",
     "app-icon",
-    "ios",
-    "android"
+    "google-services",
+    "firebase",
+    "info-plist",
+    "podfile",
+    "android-manifest",
+    "strings-xml",
+    "environment-rules",
+    "yaml-config"
   ],
   "author": "cowfox <foxshee@gmail.com>",
   "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.28.2",
   "scripts": {
-    "test": "exit 0;",
+    "build": "tsc",
+    "prepare": "npm run build",
+    "prepack": "npm run build",
+    "check:types": "tsc --noEmit",
+    "check:exports": "publint",
+    "test": "echo \"No unit tests yet\" && exit 0",
+    "test:watch": "echo \"No unit tests yet\" && exit 0",
+    "test:coverage": "echo \"No unit tests yet\" && exit 0",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "pnpm build && changeset publish",
     "postinstall": "node postinstall.js",
     "preuninstall": "node preuninstall.js"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.28.0",
     "@nativescript/hook": "^2.0.0",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^18.14.1",
+    "@types/semver": "^7.3.13",
     "plist": "^3.0.6",
-    "semver": "^7.3.8"
+    "publint": "^0.3.0",
+    "semver": "^7.3.8",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
   },
   "bugs": {
-    "url": "https://github.com/cowfox/nativescript-multiple-environments-building/issues"
+    "url": "https://github.com/cowfox/nativescript-env/issues"
   },
-  "homepage": "https://github.com/cowfox/nativescript-multiple-environments-building#readme",
-  "main": "postinstall.js",
+  "homepage": "https://github.com/cowfox/nativescript-env#readme",
   "directories": {
     "lib": "lib"
   }
