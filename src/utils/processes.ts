@@ -223,29 +223,6 @@ export function generateAppIcon(logger: any, appIconPath: string | undefined, pr
     const cmd = `ns resources generate icons ${fullAppIconPath}`;
     try {
       childProcess.execSync(cmd, { stdio: 'ignore' });
-
-      // Sync Android Adaptive Icon layers (ic_launcher_foreground & ic_launcher_monochrome) with generated ic_launcher.png
-      const appResDir = projectData.appResourcesDirectoryPath || path.join(projectData.projectDir, 'App_Resources');
-      const androidResDir = path.join(appResDir, 'Android', 'src', 'main', 'res');
-      if (fs.existsSync(androidResDir)) {
-        const mipmapDirs = fs.readdirSync(androidResDir).filter((d) => d.startsWith('mipmap-'));
-        mipmapDirs.forEach((mipmapDir) => {
-          const dirPath = path.join(androidResDir, mipmapDir);
-          const legacyLauncherPath = path.join(dirPath, 'ic_launcher.png');
-          const foregroundPath = path.join(dirPath, 'ic_launcher_foreground.png');
-          const monochromePath = path.join(dirPath, 'ic_launcher_monochrome.png');
-
-          if (fs.existsSync(legacyLauncherPath)) {
-            if (fs.existsSync(foregroundPath)) {
-              fs.copyFileSync(legacyLauncherPath, foregroundPath);
-            }
-            if (fs.existsSync(monochromePath)) {
-              fs.copyFileSync(legacyLauncherPath, monochromePath);
-            }
-          }
-        });
-      }
-
       logger.info(`-o[NeoEnv]o--> Done generating app icon`);
     } catch (error) {
       throw new Error(`-o[NeoEnv]o--x Error generating app icon: ${error}`);
