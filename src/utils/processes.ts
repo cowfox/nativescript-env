@@ -218,7 +218,7 @@ export function copyExtraFolders(
 
 import { Jimp } from 'jimp';
 
-async function generateAdaptiveForeground(inputFilePath: string, foregroundPath: string, monochromePath?: string): Promise<void> {
+async function generateAdaptiveForeground(logger: any, androidResDir: string, inputFilePath: string, foregroundPath: string, monochromePath?: string): Promise<void> {
   try {
     const image = await Jimp.read(inputFilePath);
     const width = image.bitmap.width;
@@ -226,6 +226,16 @@ async function generateAdaptiveForeground(inputFilePath: string, foregroundPath:
 
     // Extract top-left corner pixel color to fill padding seamlessly with icon background color
     const cornerColor = image.getPixelColor(0, 0);
+
+    // Update values/ic_launcher_background.xml color to match icon corner color
+    const hexColor = '#' + (cornerColor >>> 8).toString(16).padStart(6, '0').toUpperCase();
+    const bgXmlPath = path.join(androidResDir, 'values', 'ic_launcher_background.xml');
+    if (fs.existsSync(bgXmlPath)) {
+      try {
+        const xmlContent = `<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">${hexColor}</color>\n</resources>\n`;
+        fs.writeFileSync(bgXmlPath, xmlContent, 'utf8');
+      } catch (e) {}
+    }
 
     // Calculate Safe Zone dimensions (72dp / 108dp = 66.67%)
     const safeWidth = Math.round(width * (72 / 108));
@@ -266,6 +276,8 @@ export function generateAppIcon(logger: any, appIconPath: string | undefined, pr
 
           if (fs.existsSync(legacyLauncherPath)) {
             generateAdaptiveForeground(
+              logger,
+              androidResDir,
               legacyLauncherPath,
               foregroundPath,
               fs.existsSync(monochromePath) ? monochromePath : undefined
