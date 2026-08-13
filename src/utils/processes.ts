@@ -36,9 +36,9 @@ export function updateAppBundleId(
     if (fs.existsSync(cfgPath)) {
       try {
         let content = fs.readFileSync(cfgPath, 'utf8');
-        backupData[cfgPath] = content;
         const newContent = content.replace(/(id:\s*['"])[^'"]+(['"])/, `$1${resolvedId}$2`);
         if (newContent !== content) {
+          backupData[cfgPath] = content;
           fs.writeFileSync(cfgPath, newContent, 'utf8');
         }
       } catch (e) {}
@@ -50,18 +50,20 @@ export function updateAppBundleId(
   if (fs.existsSync(pkgPath)) {
     try {
       let content = fs.readFileSync(pkgPath, 'utf8');
-      backupData[pkgPath] = content;
       const pkg = JSON.parse(content);
       if (pkg.nativescript && pkg.nativescript.id && pkg.nativescript.id !== resolvedId) {
+        backupData[pkgPath] = content;
         pkg.nativescript.id = resolvedId;
         fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
       }
     } catch (e) {}
   }
 
-  try {
-    fs.writeFileSync(backupFilePath, JSON.stringify(backupData, null, 2), 'utf8');
-  } catch (e) {}
+  if (Object.keys(backupData).length > 0) {
+    try {
+      fs.writeFileSync(backupFilePath, JSON.stringify(backupData, null, 2), 'utf8');
+    } catch (e) {}
+  }
 
   // 3. Sync applicationId in App_Resources/Android/app.gradle
   if (appResourcesFolder && platform === 'android') {
@@ -337,13 +339,20 @@ export function restoreAppBundleIdBackup(logger: any, projectData: any): void {
   if (fs.existsSync(backupFilePath)) {
     try {
       const backupData: Record<string, string> = JSON.parse(fs.readFileSync(backupFilePath, 'utf8'));
+      let restoredCount = 0;
       Object.keys(backupData).forEach((filePath) => {
         if (fs.existsSync(filePath)) {
-          fs.writeFileSync(filePath, backupData[filePath], 'utf8');
+          const currentContent = fs.readFileSync(filePath, 'utf8');
+          if (currentContent !== backupData[filePath]) {
+            fs.writeFileSync(filePath, backupData[filePath], 'utf8');
+            restoredCount++;
+          }
         }
       });
       fs.unlinkSync(backupFilePath);
-      logger.info(`-o[NeoEnv]o--> Restored original project configuration files (nativescript.config.ts / package.json)`);
+      if (restoredCount > 0) {
+        logger.info(`-o[NeoEnv]o--> Restored original project configuration files (nativescript.config.ts / package.json)`);
+      }
     } catch (e) {}
   }
 }
