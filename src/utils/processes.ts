@@ -216,6 +216,32 @@ export function copyExtraFolders(
   });
 }
 
+import { Jimp } from 'jimp';
+
+async function generateAdaptiveForeground(inputFilePath: string, foregroundPath: string, monochromePath?: string): Promise<void> {
+  try {
+    const image = await Jimp.read(inputFilePath);
+    const width = image.bitmap.width;
+    const height = image.bitmap.height;
+
+    // Calculate Safe Zone dimensions (72dp / 108dp = 66.67%)
+    const safeWidth = Math.round(width * (72 / 108));
+    const safeHeight = Math.round(height * (72 / 108));
+
+    image.resize({ w: safeWidth, h: safeHeight });
+
+    const canvas = new Jimp({ width, height, color: 0x00000000 });
+    const x = Math.round((width - safeWidth) / 2);
+    const y = Math.round((height - safeHeight) / 2);
+    canvas.composite(image, x, y);
+
+    await canvas.write(foregroundPath as any);
+    if (monochromePath) {
+      await canvas.write(monochromePath as any);
+    }
+  } catch (e) {}
+}
+
 export function generateAppIcon(logger: any, appIconPath: string | undefined, projectData: any): void {
   if (appIconPath && fs.existsSync(path.join(projectData.projectDir, appIconPath))) {
     const fullAppIconPath = path.join(projectData.projectDir, appIconPath);
@@ -223,7 +249,29 @@ export function generateAppIcon(logger: any, appIconPath: string | undefined, pr
     const cmd = `ns resources generate icons ${fullAppIconPath}`;
     try {
       childProcess.execSync(cmd, { stdio: 'ignore' });
-      logger.info(`-o[NeoEnv]o--> Done generating app icon`);
+
+      // Automatically generate Android Adaptive Icon layers (foreground & monochrome) with 66.7% safe zone padding
+      const appResDir = projectData.appResourcesDirectoryPath || path.join(projectData.projectDir, 'App_Resources');
+      const androidResDir = path.join(appResDir, 'Android', 'src', 'main', 'res');
+      if (fs.existsSync(androidResDir)) {
+        const mipmapDirs = fs.readdirSync(androidResDir).filter((d) => d.startsWith('mipmap-'));
+        for (const mipmapDir of mipmapDirs) {
+          const dirPath = path.join(androidResDir, mipmapDir);
+          const legacyLauncherPath = path.join(dirPath, 'ic_launcher.png');
+          const foregroundPath = path.join(dirPath, 'ic_launcher_foreground.png');
+          const monochromePath = path.join(dirPath, 'ic_launcher_monochrome.png');
+
+          if (fs.existsSync(legacyLauncherPath)) {
+            generateAdaptiveForeground(
+              legacyLauncherPath,
+              foregroundPath,
+              fs.existsSync(monochromePath) ? monochromePath : undefined
+            );
+          }
+        }
+      }
+
+      logger.info(`-o[NeoEnv]o--> Done generating app icon (including Android 8+ Adaptive Icons)`);
     } catch (error) {
       throw new Error(`-o[NeoEnv]o--x Error generating app icon: ${error}`);
     }

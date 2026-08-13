@@ -97,6 +97,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "jimp": "^1.6.1",
     "js-yaml": "^4.1.0"
   },
   "bugs": {
