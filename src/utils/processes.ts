@@ -224,13 +224,16 @@ async function generateAdaptiveForeground(inputFilePath: string, foregroundPath:
     const width = image.bitmap.width;
     const height = image.bitmap.height;
 
+    // Extract top-left corner pixel color to fill padding seamlessly with icon background color
+    const cornerColor = image.getPixelColor(0, 0);
+
     // Calculate Safe Zone dimensions (72dp / 108dp = 66.67%)
     const safeWidth = Math.round(width * (72 / 108));
     const safeHeight = Math.round(height * (72 / 108));
 
     image.resize({ w: safeWidth, h: safeHeight });
 
-    const canvas = new Jimp({ width, height, color: 0x00000000 });
+    const canvas = new Jimp({ width, height, color: cornerColor });
     const x = Math.round((width - safeWidth) / 2);
     const y = Math.round((height - safeHeight) / 2);
     canvas.composite(image, x, y);
