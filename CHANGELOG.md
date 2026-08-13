@@ -1,5 +1,13 @@
 # @wuneo/nativescript-env
 
+## 1.0.1-beta.1
+
+### Patch Changes
+
+- 98038d6: # Changelog
+
+  - fix(ci): wrap if condition on line 56 in double quotes to fix YAML syntax error
+
 ## 1.0.1-beta.0
 
 ### Patch Changes

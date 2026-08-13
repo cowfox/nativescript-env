@@ -5,6 +5,7 @@
     "@wuneo/nativescript-env": "1.0.0"
   },
   "changesets": [
-    "1786580566-auto-generated"
+    "1786580566-auto-generated",
+    "1786581093-auto-generated"
   ]
 }
