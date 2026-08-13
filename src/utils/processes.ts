@@ -264,8 +264,8 @@ export async function generateAppIcon(logger: any, appIconPath: string | undefin
       childProcess.execSync(cmd, { stdio: 'ignore' });
 
       // Automatically generate Android Adaptive Icon layers (foreground & monochrome) with 66.7% safe zone padding
-      const appResDir = projectData.appResourcesDirectoryPath || path.join(projectData.projectDir, 'App_Resources');
-      const androidResDir = path.join(appResDir, 'Android', 'src', 'main', 'res');
+      const projectDir = projectData.projectDir || process.cwd();
+      const androidResDir = path.join(projectDir, 'App_Resources', 'Android', 'src', 'main', 'res');
       if (fs.existsSync(androidResDir)) {
         const mipmapDirs = fs.readdirSync(androidResDir).filter((d) => d.startsWith('mipmap-'));
         for (const mipmapDir of mipmapDirs) {
