@@ -1,5 +1,13 @@
 # @wuneo/nativescript-env
 
+## 1.0.1-beta.2
+
+### Patch Changes
+
+- 352bbe1: # Changelog
+
+  - fix(ci): add explicit npm authentication step for changeset publish to solve ENEEDAUTH
+
 ## 1.0.1-beta.1
 
 ### Patch Changes
