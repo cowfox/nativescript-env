@@ -169,7 +169,7 @@ else ifeq ($(SUBCMD),auto)
 	printf -- "---\n'$$PKG_NAME': $$BUMP\n---\n\n# Changelog\n\n$$NOTES\n" > "$$FILENAME"; \
 	echo "✅ 已生成: $$FILENAME"; echo ""; \
 	cat "$$FILENAME"; echo ""; \
-	if [ -n "$$COMMITS" ]; then git add .changeset/; echo "✅ 已暂存 changeset"; fi; echo ""; echo "💡 建议提交 (changeset):"; echo "   git commit -m \"🐳 chore(changeset): Add new changeset\""
+	if [ -n "$$COMMITS" ]; then git add .changeset/; echo "✅ 已暂存 changeset"; fi; echo ""; echo "💡 建议 commit message:"; echo "   🐳 chore(changeset): Add new changeset"
 else
 	@BRANCH=$$($(GET_BRANCH)); \
 	if [ "$$BRANCH" = "master" ]; then \
@@ -178,8 +178,8 @@ else
 	fi
 	pnpm changeset
 	@echo ""
-	@echo "💡 建议提交 (changeset):"
-	@echo "   git commit -m \"🐳 chore(changeset): Add new changeset\""
+	@echo "💡 建议 commit message:"
+	@echo "   🐳 chore(changeset): Add new changeset"
 endif
 
 # -----------------------------------------------------------------------------
