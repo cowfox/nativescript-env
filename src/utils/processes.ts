@@ -22,6 +22,12 @@ export function updateAppBundleId(
   }
 
   const projectDir = projectData?.projectDir || process.cwd();
+  const cacheDir = path.join(projectDir, 'node_modules', '.cache');
+  if (!fs.existsSync(cacheDir)) {
+    try { fs.mkdirSync(cacheDir, { recursive: true }); } catch (e) {}
+  }
+  const backupFilePath = path.join(cacheDir, 'neo-env-config-backup.json');
+  const backupData: Record<string, string> = {};
 
   // 1. Sync id in nativescript.config.ts or nativescript.config.js
   const configTs = path.join(projectDir, 'nativescript.config.ts');
@@ -30,6 +36,7 @@ export function updateAppBundleId(
     if (fs.existsSync(cfgPath)) {
       try {
         let content = fs.readFileSync(cfgPath, 'utf8');
+        backupData[cfgPath] = content;
         const newContent = content.replace(/(id:\s*['"])[^'"]+(['"])/, `$1${resolvedId}$2`);
         if (newContent !== content) {
           fs.writeFileSync(cfgPath, newContent, 'utf8');
@@ -42,11 +49,19 @@ export function updateAppBundleId(
   const pkgPath = path.join(projectDir, 'package.json');
   if (fs.existsSync(pkgPath)) {
     try {
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+      let content = fs.readFileSync(pkgPath, 'utf8');
+      backupData[pkgPath] = content;
+      const pkg = JSON.parse(content);
       if (pkg.nativescript && pkg.nativescript.id && pkg.nativescript.id !== resolvedId) {
         pkg.nativescript.id = resolvedId;
         fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
       }
+    } catch (e) {}
+  }
+
+  if (!fs.existsSync(backupFilePath) && Object.keys(backupData).length > 0) {
+    try {
+      fs.writeFileSync(backupFilePath, JSON.stringify(backupData, null, 2), 'utf8');
     } catch (e) {}
   }
 
@@ -212,5 +227,23 @@ export function generateAppIcon(logger: any, appIconPath: string | undefined, pr
     } catch (error) {
       throw new Error(`-o[NeoEnv]o--x Error generating app icon: ${error}`);
     }
+  }
+}
+
+export function restoreAppBundleIdBackup(logger: any, projectData: any): void {
+  const projectDir = projectData?.projectDir || process.cwd();
+  const backupFilePath = path.join(projectDir, 'node_modules', '.cache', 'neo-env-config-backup.json');
+
+  if (fs.existsSync(backupFilePath)) {
+    try {
+      const backupData: Record<string, string> = JSON.parse(fs.readFileSync(backupFilePath, 'utf8'));
+      Object.keys(backupData).forEach((filePath) => {
+        if (fs.existsSync(filePath)) {
+          fs.writeFileSync(filePath, backupData[filePath], 'utf8');
+        }
+      });
+      fs.unlinkSync(backupFilePath);
+      logger.info(`-o[NeoEnv]o--> Restored original project configuration files (nativescript.config.ts / package.json)`);
+    } catch (e) {}
   }
 }

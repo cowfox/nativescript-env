@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as plist from 'plist';
 import * as envRulesUtils from './utils/env-rules';
 import * as fileUtils from './utils/file';
+import * as processes from './utils/processes';
 
 export = async function ($logger: any, $projectData: any, hookArgs: any) {
   const platformNameFromHookArgs = hookArgs && (hookArgs.platform || (hookArgs.prepareData && hookArgs.prepareData.platform));
@@ -64,4 +65,7 @@ export = async function ($logger: any, $projectData: any, hookArgs: any) {
     $logger.info(`-o[NeoEnv]o--> Deleting unused env files from "${targetFolderPath}"`);
     fileUtils.detectAndDeleteEnvFiles($logger, targetFolderPath, deleteMatchPattern);
   }
+
+  // Restore original project configuration files (nativescript.config.ts / package.json)
+  processes.restoreAppBundleIdBackup($logger, $projectData);
 };
