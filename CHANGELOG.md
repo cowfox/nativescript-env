@@ -1,5 +1,15 @@
 # @wuneo/nativescript-env
 
+## 1.0.1-beta.17
+
+### Patch Changes
+
+- f064e70: # Changelog
+
+  - fix(hooks): avoid redundant file mtime modifications to prevent triggering CLI debug watcher rebuilds
+  - docs(readme): update configuration example and reference for platform-isolated versioning and adaptive icon generation
+  - fix(versioning): isolate buildNumber and versionCode per platform to prevent cross-platform build count collisions
+
 ## 1.0.1-beta.16
 
 ### Patch Changes
