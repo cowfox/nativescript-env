@@ -96,7 +96,7 @@ export = async function (
   processes.updateAppBundleId($logger, envEntry.appBundleId, $projectData, platformData, appResourcesFolder);
 
   // Step 2 - Versioning
-  envRulesContent = processes.updateVersioning($logger, appBuildingInfo.release, envRulesContent, $projectData);
+  envRulesContent = processes.updateVersioning($logger, appBuildingInfo.release, envRulesContent, $projectData, platformData.platformNameLowerCase);
   if (platformData.platformNameLowerCase === 'android') {
     processes.saveVersioningToAndroidGradle($logger, appResourcesFolder, envRulesContent);
   }
@@ -109,5 +109,5 @@ export = async function (
   await processes.generateAppIcon($logger, envRulesContent.appIconPath, $projectData);
 
   // Save updated "Env Rules"
-  fs.writeFileSync(envRulesFilePath, JSON.stringify(envRulesContent, null, 4));
+  envRulesUtils.saveEnvRules(envRulesFilePath, envRulesContent);
 };
