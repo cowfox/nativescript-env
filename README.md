@@ -48,9 +48,14 @@ You can use either **`environment-rules.yaml`** (recommended for adding comments
 # NativeScript Environment Rules Configuration (@wuneo/nativescript-env)
 # ==============================================================================
 
-# App Version & Build Numbers
+# App Version & Build Numbers (Supports single value or platform-specific object)
 version: "6.10.0"
-buildNumber: "6"
+buildNumber:
+  ios: "6"
+  android: "6"
+versionCode:
+  ios: "6100006"
+  android: "6100006"
 autoVersionCode: true
 
 # Default active environment when no CLI flag (e.g. --env.use.<env>) is specified
@@ -66,7 +71,7 @@ directCopyRules:
   GoogleService-Info.plist: "App_Resources/iOS/GoogleService-Info.plist"
   Podfile: "App_Resources/iOS/Podfile"
 
-# Master App Icon path (Automatically resizes for iOS & Android)
+# Master App Icon path (Automatically resizes for iOS & generates Android 8+ Adaptive Icons)
 appIconPath: "environments/app-icon/icon.png"
 
 # Environment Definitions
@@ -165,9 +170,8 @@ directCopyRules:
 
 - 🎯 **Dynamic App Bundle ID**: Set per-environment App IDs directly in `environment-rules.yaml`, with optional platform overrides (`{ "android": "...", "ios": "..." }`).
 - 📁 **Smart File Swapping**: Automatically matches files like `environment.staging.ts` $\rightarrow$ `environment.ts` or `GoogleService-Info.dev.plist` $\rightarrow$ `GoogleService-Info.plist` during build.
-- 🎨 **App Icon Generation**: Integrates with NativeScript resource generator to build environment-specific App Icons automatically.
-- 🔢 **Auto Versioning**: Manages `versionName`, `versionCode`, and `buildNumber` across builds.
-- ⚡️ **Zero Code Modifications**: Built natively for NativeScript 8+ with zero runtime overhead or `nativescript.config.ts` hacks.
+- 🎨 **App Icon Generation**: Integrates with NativeScript resource generator to build environment-specific App Icons. Automatically handles Android 8+ Adaptive Icons (`ic_launcher_foreground.png`, monochrome layers, and `ic_launcher_background.xml` color extraction) with 66.7% safe zone padding.
+- 🔢 **Auto Versioning**: Manages `versionName`, `versionCode`, and `buildNumber` across builds with platform isolation (`{ "android": "...", "ios": "..." }`).
 
 ---
 
@@ -175,13 +179,17 @@ directCopyRules:
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `version` | `string` | App SemVer string synced with `package.json`. |
+| `buildNumber` | `string` \| `object` | Build number string or `{ "android": "...", "ios": "..." }` for isolated platform tracking. |
+| `versionCode` | `string` \| `object` | Version code string or `{ "android": "...", "ios": "..." }`. Auto-generated if `autoVersionCode: true`. |
+| `autoVersionCode` | `boolean` | Auto-calculates integer version code based on version & buildNumber during release builds. |
 | `default` | `string` | Default environment name if `--env.use.<name>` is omitted. |
 | `environments` | `Array` | Environment definitions (`name`, `appBundleId`, optional `matchRules`). |
 | `environments[].appBundleId` | `string` \| `object` | App Bundle ID string or `{ "android": "...", "ios": "..." }`. |
 | `environments[].matchRules` | `string` (Optional) | Custom regex matching pattern (Auto-derived as `.*\.name\..*` if omitted). |
 | `extraPaths` | `string[]` | Additional directories outside `App_Resources` to process suffix file swapping. |
 | `directCopyRules` | `Record<string, string>` | Direct file copy mappings after standard environment file swap. |
-| `appIconPath` | `string` | Master icon file path to generate platform app icons. |
+| `appIconPath` | `string` | Master icon file path to generate platform app icons (iOS & Android Adaptive Icons). |
 
 ---
 
