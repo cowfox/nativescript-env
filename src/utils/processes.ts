@@ -255,7 +255,7 @@ async function generateAdaptiveForeground(logger: any, androidResDir: string, in
   } catch (e) {}
 }
 
-export function generateAppIcon(logger: any, appIconPath: string | undefined, projectData: any): void {
+export async function generateAppIcon(logger: any, appIconPath: string | undefined, projectData: any): Promise<void> {
   if (appIconPath && fs.existsSync(path.join(projectData.projectDir, appIconPath))) {
     const fullAppIconPath = path.join(projectData.projectDir, appIconPath);
     logger.info(`-o[NeoEnv]o--> Found "App Icon" at "${appIconPath}". Re-generating...`);
@@ -275,7 +275,7 @@ export function generateAppIcon(logger: any, appIconPath: string | undefined, pr
           const monochromePath = path.join(dirPath, 'ic_launcher_monochrome.png');
 
           if (fs.existsSync(legacyLauncherPath)) {
-            generateAdaptiveForeground(
+            await generateAdaptiveForeground(
               logger,
               androidResDir,
               legacyLauncherPath,

@@ -106,7 +106,7 @@ export = async function (
   processes.copyExtraFolders($logger, envRulesContent.extraPaths, matchRules, directCopyRules, $projectData);
 
   // Step 4 - App Icon
-  processes.generateAppIcon($logger, envRulesContent.appIconPath, $projectData);
+  await processes.generateAppIcon($logger, envRulesContent.appIconPath, $projectData);
 
   // Save updated "Env Rules"
   fs.writeFileSync(envRulesFilePath, JSON.stringify(envRulesContent, null, 4));
