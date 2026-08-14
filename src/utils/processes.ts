@@ -15,7 +15,7 @@ export function updateAppBundleId(
   const platform = platformData?.platformNameLowerCase || 'android';
   const resolvedId = typeof appBundleId === 'string' ? appBundleId : (appBundleId[platform] || appBundleId.default);
 
-  logger.info(`-o[NeoEnv]o--> Updating App Bundle ID to: "${resolvedId}"`);
+  logger.info(`[NeoEnv] 🆔 App Bundle ID   -> "${resolvedId}"`);
 
   if (projectData && projectData.projectIdentifiers) {
     projectData.projectIdentifiers.ios = projectData.projectIdentifiers.android = resolvedId;
@@ -140,7 +140,7 @@ export function updateVersioning(
       ios: '1',
       android: '1'
     };
-    logger.info(`-o[NeoEnv]o--> Updated version # to "${envRulesContent.version}", and reset build # to "1" for all platforms`);
+    logger.info(`[NeoEnv] 🏷️  Version Info    -> Updated to "${envRulesContent.version}", reset build # to "1"`);
   } else {
     if (inReleaseMode) {
       const nextBuildNum = (+currentBuildNum + 1).toString();
@@ -151,26 +151,22 @@ export function updateVersioning(
         ios: platform === 'ios' ? nextBuildNum : prevIos,
         android: platform === 'android' ? nextBuildNum : prevAndroid
       };
-      logger.info(`-o[NeoEnv]o--> Kept version # at "${envRulesContent.version}", updated build # for ${platform} to "${nextBuildNum}"`);
+      logger.info(`[NeoEnv] 🏷️  Version Info    -> "${envRulesContent.version}" (Build: "${nextBuildNum}" for ${platform})`);
     } else {
-      logger.info(`-o[NeoEnv]o--> Kept version # at "${envRulesContent.version}"`);
+      logger.info(`[NeoEnv] 🏷️  Version Info    -> "${envRulesContent.version}" (Build: "${currentBuildNum}" [Dev Mode - Skipped Auto-Bump])`);
     }
   }
 
   const activeBuildNum = getPlatformValue(envRulesContent.buildNumber, platform, '1');
   const autoVersionCode = envRulesContent.autoVersionCode === true;
   if (!inReleaseMode) {
-    if (autoVersionCode) {
-      logger.info(`-o[NeoEnv]o--! Not in "Release" mode, skipping "Version Code" generation.`);
-    }
     return envRulesContent;
   }
 
   if (autoVersionCode) {
-    logger.info(`-o[NeoEnv]o--> Auto-generating version code for platform "${platform}"...`);
     const result = versioningUtils.generateVersionCode(envRulesContent.version, activeBuildNum);
     if (result.error) {
-      throw new Error(`-o[NeoEnv]o--x Could not generate Version Code: ${result.errorMessage}`);
+      throw new Error(`[NeoEnv] ❌ Could not generate Version Code: ${result.errorMessage}`);
     } else {
       const prevIosVerCode = getPlatformValue(envRulesContent.versionCode, 'ios', result.versionCode!);
       const prevAndroidVerCode = getPlatformValue(envRulesContent.versionCode, 'android', result.versionCode!);
@@ -181,7 +177,7 @@ export function updateVersioning(
       };
     }
     const currentPlatformVerCode = getPlatformValue(envRulesContent.versionCode, platform);
-    logger.info(`-o[NeoEnv]o--> Generated version code "${currentPlatformVerCode}" based on version "${envRulesContent.version}" and build "${activeBuildNum}" for ${platform}`);
+    logger.info(`[NeoEnv] 🔢 Version Code   -> "${currentPlatformVerCode}" (Version: "${envRulesContent.version}", Build: "${activeBuildNum}")`);
   }
 
   return envRulesContent;
@@ -279,8 +275,6 @@ export async function generateAppIcon(logger: any, appIconPath: string | undefin
   const fullAppIconPath = path.join(projectDir, appIconPath);
   if (!fs.existsSync(fullAppIconPath)) return;
 
-  logger.info(`-o[NeoEnv]o--> Found "App Icon" at "${appIconPath}". Re-generating...`);
-
   const cmd = `ns resources generate icons ${fullAppIconPath}`;
   try {
     childProcess.execSync(cmd, { stdio: 'ignore' });
@@ -326,9 +320,9 @@ export async function generateAppIcon(logger: any, appIconPath: string | undefin
       }
     }
 
-    logger.info(`-o[NeoEnv]o--> Done generating app icon (including Android 8+ Adaptive Icons)`);
+    logger.info(`[NeoEnv] 🖼️  App Icon        -> Generated for "${appIconPath}" (including Android 8+ Adaptive Layers)`);
   } catch (error) {
-    throw new Error(`-o[NeoEnv]o--x Error generating app icon: ${error}`);
+    throw new Error(`[NeoEnv] ❌ Error generating app icon: ${error}`);
   }
 }
 

@@ -21,7 +21,7 @@ export = async function ($logger: any, $projectData: any, hookArgs: any) {
   );
   const envRulesContent = envRulesUtils.readEnvRules(envRulesFilePath);
 
-  $logger.info(`-o[NeoEnv]o--> After "prepare" hook - updating "version info" on platform: "${platformName}"`);
+  $logger.debug?.(`[NeoEnv] 🧹 After prepare hook running on platform: "${platformName}"`);
 
   const platformFolderPath = path.join($projectData.platformsDir, platformName);
   const platformVersionCode = envRulesUtils.getPlatformValue(envRulesContent.versionCode, platformName);
@@ -57,7 +57,7 @@ export = async function ($logger: any, $projectData: any, hookArgs: any) {
     );
   }
 
-  $logger.info(`-o[NeoEnv]o--> Updated version "${envRulesContent.version}" with version code "${platformVersionCode}"`);
+  $logger.debug?.(`[NeoEnv] 🧹 Updated native build manifest version to "${envRulesContent.version}" (${platformVersionCode})`);
 
   if (platformName === 'android') {
     let matchPatternStr = envRulesContent.envFilesMatchRules;

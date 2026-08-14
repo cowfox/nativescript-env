@@ -81,7 +81,7 @@ export = async function (
     appBuildingInfo.release = hookArgs.prepareData.release === true;
   }
 
-  $logger.info(`-o[NeoEnv]o--> Using env: ${appBuildingInfo.envName}`);
+  $logger.info(`[NeoEnv] 🌿 Active Environment -> "${appBuildingInfo.envName}"`);
 
   const directCopyRules = envRulesContent.directCopyRules || {};
   const envEntry = findEnvEntry(envRulesContent.environments, appBuildingInfo.envName);
