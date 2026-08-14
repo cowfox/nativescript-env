@@ -1,5 +1,13 @@
 # @wuneo/nativescript-env
 
+## 1.0.1-beta.19
+
+### Patch Changes
+
+- ff62239: # Changelog
+
+  - ♻️ refactor: standardize logging output with icons and refine environment file copy logic
+
 ## 1.0.1-beta.17
 
 ### Patch Changes
