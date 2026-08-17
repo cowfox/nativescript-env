@@ -252,7 +252,8 @@ async function generateAdaptiveForeground(
 
     const scaledImage = srcImage.clone().resize({ w: safeWidth, h: safeHeight });
 
-    const canvas = new Jimp({ width: targetWidth, height: targetHeight, color: cornerColor });
+    // Android Adaptive Icon foreground layer must have a transparent background (background is in ic_launcher_background.xml)
+    const canvas = new Jimp({ width: targetWidth, height: targetHeight, color: 0x00000000 });
     const x = Math.round((targetWidth - safeWidth) / 2);
     const y = Math.round((targetHeight - safeHeight) / 2);
     canvas.composite(scaledImage, x, y);
