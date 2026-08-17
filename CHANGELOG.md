@@ -1,5 +1,13 @@
 # @wuneo/nativescript-env
 
+## 1.0.1-beta.20
+
+### Patch Changes
+
+- c2f513d: # Changelog
+
+  - fix: set transparent background for Android adaptive icon foreground canvas
+
 ## 1.0.1-beta.19
 
 ### Patch Changes
