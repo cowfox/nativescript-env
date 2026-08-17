@@ -235,7 +235,7 @@ make help             # list all commands
 
 | Branch      | Purpose               | Publishes                          |
 | ----------- | --------------------- | ---------------------------------- |
-| `master`    | production line       | CI only (no publish)               |
+| `main`      | production line       | CI only (no publish)               |
 | `develop`   | integration           | `dev` pre-releases                 |
 | `release/*` | release stabilization | `alpha` → `beta` → `rc` → `latest` |
 | `feature/*` | working branches      | —                                  |
@@ -258,7 +258,8 @@ make release push              # 1.1.0-alpha.0  (dist-tag: alpha)
 
 # 5. Iterate (beta / rc) as needed, then ship the final release
 make pre exit
-make release push              # 1.1.0          (dist-tag: latest)
+make release push              # 1.1.0          (bumps version & commits)
+make tag push                  # v1.1.0         (triggers CI npm release)
 ```
 
 `changeset publish` (run in CI on push to `release/**` / `develop` when `package.json`

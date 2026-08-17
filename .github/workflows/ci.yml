@@ -11,9 +11,9 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master, develop]
+    branches: [main, develop]
 
 env:
   NODE_VERSION: '20'

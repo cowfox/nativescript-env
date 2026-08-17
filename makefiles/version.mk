@@ -129,8 +129,8 @@ ifeq ($(SUBCMD),status)
 	pnpm changeset status
 else ifeq ($(SUBCMD),auto)
 	@BRANCH=$$($(GET_BRANCH)); \
-	if [ "$$BRANCH" = "master" ]; then \
-		echo "❌ 不能在 master 分支上创建 changeset"; \
+	if [ "$$BRANCH" = "main" ] || [ "$$BRANCH" = "master" ]; then \
+		echo "❌ 不能在 main 分支上创建 changeset"; \
 		exit 1; \
 	fi; \
 	echo "🔍 从 commit 历史生成 changeset (APP=$(APP))..."; \
@@ -140,7 +140,7 @@ else ifeq ($(SUBCMD),auto)
 		BASE_REF="$$LAST_CHANGESET_COMMIT"; \
 		echo "📌 起点: 上一次 changeset 提交 ($$(git log -1 --format='%h %s' $$BASE_REF))"; \
 	else \
-		BASE_REF=$$(git merge-base HEAD master 2>/dev/null || git merge-base HEAD develop 2>/dev/null || git rev-list --max-parents=0 HEAD); \
+		BASE_REF=$$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null || git merge-base HEAD develop 2>/dev/null || git rev-list --max-parents=0 HEAD); \
 		echo "📌 起点: 分支分叉点 ($$(git log -1 --format='%h %s' $$BASE_REF))"; \
 	fi; \
 	echo ""; \
@@ -172,8 +172,8 @@ else ifeq ($(SUBCMD),auto)
 	if [ -n "$$COMMITS" ]; then git add .changeset/; echo "✅ 已暂存 changeset"; fi; echo ""; echo "💡 建议 commit message:"; echo "   🐳 chore(changeset): Add new changeset"
 else
 	@BRANCH=$$($(GET_BRANCH)); \
-	if [ "$$BRANCH" = "master" ]; then \
-		echo "❌ 不能在 master 分支上创建 changeset"; \
+	if [ "$$BRANCH" = "main" ] || [ "$$BRANCH" = "master" ]; then \
+		echo "❌ 不能在 main 分支上创建 changeset"; \
 		exit 1; \
 	fi
 	pnpm changeset
@@ -265,44 +265,41 @@ endif
 # -----------------------------------------------------------------------------
 
 .PHONY: release
-release: ## Bump pre-release version and commit (subcommand: push → also push)
+release: ## Bump version and commit (subcommand: push → also push)
 	@BRANCH=$$($(GET_BRANCH)); \
 	IS_RELEASE=$(IS_RELEASE_BRANCH); \
-	if [ "$$BRANCH" = "master" ]; then \
-		echo "❌ master 分支请使用标准流程 (PR → Version PR → CI 自动发布/部署)"; \
+	if [ "$$BRANCH" = "main" ] || [ "$$BRANCH" = "master" ]; then \
+		echo "❌ main 分支请使用标准流程 (PR → Version PR → CI 自动发布/部署)"; \
 		exit 1; \
 	fi; \
 	if [ "$$IS_RELEASE" != "yes" ] && [ "$$BRANCH" != "develop" ]; then \
 		echo "❌ release 仅限 release/* 或 develop 分支  当前分支: $$BRANCH"; \
 		exit 1; \
 	fi; \
-	if [ ! -f ".changeset/pre.json" ]; then \
-		echo "❌ 未进入 pre-release 模式  请先执行: make pre alpha (或 dev/beta/rc)"; \
-		exit 1; \
-	fi; \
+	PRE_MODE=$$(node -p "try { require('./.changeset/pre.json').mode } catch(e) { '' }"); \
 	PENDING_CHANGESETS=$$(find .changeset -maxdepth 1 -name "*.md" ! -name "README.md" 2>/dev/null); \
-	if [ -z "$$PENDING_CHANGESETS" ]; then \
-		echo "⚠️  没有找到待处理的 changeset  请先运行: make changeset auto"; \
-		exit 1; \
+	if [ -n "$$PENDING_CHANGESETS" ] || [ "$$PRE_MODE" = "exit" ]; then \
+		echo "🚀 Pushing commits to remote (for changelog generation)..."; \
+		git push -u origin "$$BRANCH" 2>/dev/null || true; \
+		echo ""; \
+		echo "📦 Applying pending changesets..."; \
+		$(LOAD_ENV); pnpm changeset version; \
 	fi; \
-	echo "🚀 Pushing commits to remote (for changelog generation)..."; \
-	git push -u origin "$$BRANCH"; \
-	echo ""; \
-	echo "📦 Applying pending changesets..."; \
-	$(LOAD_ENV); pnpm changeset version; \
 	VERSION=$$($(GET_VERSION)); \
 	PKG_NAME=$$($(GET_PKG_NAME)); \
 	echo "📋 版本 ($(APP)): $$VERSION"; \
-	if ! echo "$$VERSION" | grep -q "-"; then \
-		echo "❌ 版本号不是 pre-release 格式: $$VERSION"; \
+	if [ "$$PRE_MODE" = "pre" ] && ! echo "$$VERSION" | grep -q "-"; then \
+		echo "❌ 预发布模式下版本号应为 pre-release 格式: $$VERSION"; \
 		exit 1; \
 	fi; \
-	echo "📝 Committing version bump..."; \
-	git add -A; \
-	if [ "$(SCOPED_RELEASE)" = "1" ]; then \
-		git commit --no-verify -m "🐳 chore(release): Bump \`$$PKG_NAME\` to \`$$VERSION\`"; \
-	else \
-		git commit --no-verify -m "🐳 chore(release): Bump version to \`$$VERSION\`"; \
+	if [ -n "$$(git status --porcelain package.json CHANGELOG.md .changeset)" ]; then \
+		echo "📝 Committing version bump..."; \
+		git add -A; \
+		if [ "$(SCOPED_RELEASE)" = "1" ]; then \
+			git commit --no-verify -m "🐳 chore(release): Bump \`$$PKG_NAME\` to \`$$VERSION\`"; \
+		else \
+			git commit --no-verify -m "🐳 chore(release): Bump version to \`$$VERSION\`"; \
+		fi; \
 	fi; \
 	if [ "$(SUBCMD)" = "push" ]; then \
 		echo "🚀 Pushing branch to remote..."; \
@@ -346,8 +343,8 @@ ifeq ($(RELEASE_VIA_TAG),1)
 		echo "   请确认 HEAD 是最近一次 make release 的 commit。"; \
 		exit 1; \
 	fi; \
-	if [ "$$BRANCH" = "master" ]; then \
-		echo "❌ master 分支不打发布 tag (发布走 develop / release/*)。"; exit 1; \
+	if [ "$$BRANCH" = "main" ] || [ "$$BRANCH" = "master" ]; then \
+		echo "❌ main 分支不打发布 tag (发布走 develop / release/*)。"; exit 1; \
 	elif [ "$$BRANCH" = "develop" ]; then \
 		if ! echo "$$VERSION" | grep -q -- "-dev\."; then \
 			echo "❌ develop 只能 tag dev 预发布 (如 $(TAG_NAME_PREFIX)1.2.0-dev.0)  当前: $$VERSION"; \
