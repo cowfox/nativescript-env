@@ -24,6 +24,46 @@ export interface EnvironmentRulesContent {
 }
 
 /**
+ * Resolves match rules regex string for an environment entry.
+ * Generates smart default matching rules if not explicitly declared in configuration.
+ */
+export function resolveMatchRules(envEntry: EnvironmentEntry | any): string {
+  if (envEntry?.matchRules) {
+    return envEntry.matchRules;
+  }
+  const name = (envEntry?.name || '').toLowerCase();
+  if (name === 'development' || name === 'dev') {
+    return `([\\w?].*)(\\.(?:dev|development))($|\\..*)`;
+  }
+  if (name === 'release' || name === 'production' || name === 'prod') {
+    return `([\\w?].*)(\\.(?:release|production|prod))($|\\..*)`;
+  }
+  if (name === 'staging' || name === 'stg') {
+    return `([\\w?].*)(\\.(?:staging|stg))($|\\..*)`;
+  }
+  return `([\\w?].*)(\\.${envEntry?.name || ''})($|\\..*)`;
+}
+
+/**
+ * Finds an environment entry by name (case-insensitive with common aliases: dev/development, prod/release, stg/staging).
+ */
+export function findEnvEntry(environments: EnvironmentEntry[] | undefined, envName: string): EnvironmentEntry | undefined {
+  if (!environments || !Array.isArray(environments)) return undefined;
+  const target = (envName || '').toLowerCase();
+  return environments.find((env) => {
+    const name = (env.name || '').toLowerCase();
+    if (name === target) return true;
+    if (target === 'dev' && name === 'development') return true;
+    if (target === 'development' && name === 'dev') return true;
+    if ((target === 'prod' || target === 'production') && (name === 'production' || name === 'release' || name === 'prod')) return true;
+    if (target === 'release' && (name === 'production' || name === 'prod')) return true;
+    if (target === 'stg' && name === 'staging') return true;
+    if (target === 'staging' && name === 'stg') return true;
+    return false;
+  });
+}
+
+/**
  * Get the full path to the "Env Rules" file.
  * Prioritizes unified files: environment-rules.yaml, environment-rules.yml, environment-rules.json.
  */

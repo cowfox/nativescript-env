@@ -1,5 +1,4 @@
-import * as path from 'path';
-import { getEnvRulesFilePath, readEnvRules } from './utils/env-rules';
+import { findEnvEntry, getEnvRulesFilePath, readEnvRules } from './utils/env-rules';
 
 export interface GetAppIdOptions {
   projectDir?: string;
@@ -68,7 +67,7 @@ export function getAppId(projectDirOrOptions?: string | GetAppIdOptions, fallbac
       envName = envRulesContent.default || 'development';
     }
 
-    const envEntry = envRulesContent.environments?.find((env) => env.name === envName);
+    const envEntry = findEnvEntry(envRulesContent.environments, envName);
     if (envEntry && envEntry.appBundleId) {
       if (typeof envEntry.appBundleId === 'string') {
         return envEntry.appBundleId;

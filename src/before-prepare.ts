@@ -1,42 +1,9 @@
 import * as path from 'path';
-import * as fs from 'fs';
 import * as envRulesUtils from './utils/env-rules';
+import { findEnvEntry, resolveMatchRules } from './utils/env-rules';
 import * as processes from './utils/processes';
 
 const DEFAULT_ENV_NAME = 'development';
-
-function resolveMatchRules(envEntry: any): string {
-  if (envEntry.matchRules) {
-    return envEntry.matchRules;
-  }
-  const name = (envEntry.name || '').toLowerCase();
-  if (name === 'development' || name === 'dev') {
-    return `([\\w?].*)(\\.(?:dev|development))($|\\..*)`;
-  }
-  if (name === 'release' || name === 'production' || name === 'prod') {
-    return `([\\w?].*)(\\.(?:release|production|prod))($|\\..*)`;
-  }
-  if (name === 'staging' || name === 'stg') {
-    return `([\\w?].*)(\\.(?:staging|stg))($|\\..*)`;
-  }
-  return `([\\w?].*)(\\.${envEntry.name})($|\\..*)`;
-}
-
-function findEnvEntry(environments: any[], envName: string): any {
-  if (!environments || !Array.isArray(environments)) return null;
-  const target = (envName || '').toLowerCase();
-  return environments.find((env) => {
-    const name = (env.name || '').toLowerCase();
-    if (name === target) return true;
-    if (target === 'dev' && name === 'development') return true;
-    if (target === 'development' && name === 'dev') return true;
-    if (target === 'prod' && (name === 'production' || name === 'release')) return true;
-    if (target === 'release' && (name === 'production' || name === 'prod')) return true;
-    if (target === 'stg' && name === 'staging') return true;
-    if (target === 'staging' && name === 'stg') return true;
-    return false;
-  });
-}
 
 export = async function (
   $logger: any,

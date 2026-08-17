@@ -65,7 +65,7 @@ export function detectAndDeleteEnvFiles(logger: any, folderFullPath: string, mat
         );
       } else {
         if (matchRules.test(item)) {
-          logger.info('[NeoEnv] 🧹 Deleted env variant:', itemPath);
+          logger.info?.('[NeoEnv] 🧹 Deleted env variant:', itemPath);
           fs.unlinkSync(itemPath);
         }
       }
@@ -91,7 +91,7 @@ export function replaceContentInFile(logger: any, pattern: RegExp, replacement: 
   }
 }
 
-function buildDestinationFileName(logger: any, file: string, regex: RegExp): string {
+export function buildDestinationFileName(logger: any, file: string, regex: RegExp): string {
   const matches = file.match(regex);
   if (Array.isArray(matches) && matches.length >= 4) {
     const base = matches[1];
@@ -115,7 +115,7 @@ function buildDestinationFileName(logger: any, file: string, regex: RegExp): str
   }
 }
 
-function doesSourceMatchDestination(logger: any, sourcePath: string, destinationPath: string): boolean {
+export function doesSourceMatchDestination(logger: any, sourcePath: string, destinationPath: string): boolean {
   if (!fs.existsSync(sourcePath)) {
     throw new Error(`-o[NeoEnv]o--x Source file "${sourcePath}" does not exist!`);
   }
@@ -129,4 +129,32 @@ function doesSourceMatchDestination(logger: any, sourcePath: string, destination
   const destinationFileContents = fs.readFileSync(destinationPath);
 
   return sourceFileContents.equals(destinationFileContents);
+}
+
+export function copyAppResources(
+  logger: any,
+  appResourcesFolder: string,
+  matchRulesString: string,
+  directCopyRules: Record<string, string>,
+  projectData: any
+): void {
+  detectAndCopyEnvFiles(logger, appResourcesFolder, matchRulesString, directCopyRules, projectData);
+}
+
+export function copyExtraFolders(
+  logger: any,
+  extraPaths: string[] | undefined,
+  matchRulesString: string,
+  directCopyRules: Record<string, string>,
+  projectData: any
+): void {
+  if (!extraPaths) return;
+  extraPaths.forEach((folderPath) => {
+    const cachedDir = projectData.$projectHelper?.cachedProjectDir || projectData.projectDir;
+    const folderFullPath = folderPath.indexOf(cachedDir) < 0
+      ? path.join(cachedDir, folderPath)
+      : folderPath;
+
+    detectAndCopyEnvFiles(logger, folderFullPath, matchRulesString, directCopyRules, projectData);
+  });
 }

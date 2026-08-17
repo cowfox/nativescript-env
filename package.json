@@ -76,9 +76,9 @@
     "prepack": "npm run build",
     "check:types": "tsc --noEmit",
     "check:exports": "publint",
-    "test": "echo \"No unit tests yet\" && exit 0",
-    "test:watch": "echo \"No unit tests yet\" && exit 0",
-    "test:coverage": "echo \"No unit tests yet\" && exit 0",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "changeset": "changeset",
     "version": "changeset version",
     "release": "pnpm build && changeset publish",
@@ -91,10 +91,12 @@
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^18.14.1",
     "@types/semver": "^7.3.13",
+    "@vitest/coverage-v8": "^4.1.10",
     "plist": "^3.0.6",
     "publint": "^0.3.0",
     "semver": "^7.3.8",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^4.1.10"
   },
   "dependencies": {
     "jimp": "^1.6.1",
