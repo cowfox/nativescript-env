@@ -1,10 +1,11 @@
 # @wuneo/nativescript-env
 
 [![NPM version](https://img.shields.io/npm/v/@wuneo/nativescript-env.svg)](https://www.npmjs.com/package/@wuneo/nativescript-env)
+[![CI](https://github.com/cowfox/nativescript-env/actions/workflows/ci.yml/badge.svg)](https://github.com/cowfox/nativescript-env/actions/workflows/ci.yml)
 [![License](https://img.shields.io/npm/l/@wuneo/nativescript-env.svg)](LICENSE)
 [![Downloads](https://img.shields.io/npm/dm/@wuneo/nativescript-env.svg)](https://www.npmjs.com/package/@wuneo/nativescript-env)
 
-The complete environment management plugin for **NativeScript 8+**. Effortlessly switch **App IDs**, **App Icons**, and **Environment-Specific Resources** (such as `GoogleService-Info.plist`, `google-services.json`, or API environment configs) per build command!
+The complete environment management plugin for **NativeScript 8+ & 9+**. Effortlessly switch **App IDs**, **App Icons & Splash Screens**, and **Environment-Specific Native Resources** (such as `GoogleService-Info.plist`, `google-services.json`, or API configs) per build command!
 
 ---
 
@@ -23,6 +24,8 @@ The complete environment management plugin for **NativeScript 8+**. Effortlessly
 npm i @wuneo/nativescript-env --save-dev
 # or
 yarn add @wuneo/nativescript-env --dev
+# or
+pnpm add -D @wuneo/nativescript-env
 ```
 
 ### 2. Initialize Configuration File
@@ -33,13 +36,13 @@ Run the initialization command in your NativeScript project root:
 npx wuneo-env init
 ```
 
-This will create an `environment-rules.yaml` template file in your project root with detailed explanatory comments.
+This creates an `environment-rules.yaml` template file in your project root with detailed explanatory comments.
 
 _(No modifications to `nativescript.config.ts` required! The plugin automatically manages App IDs, assets, and resources in the background during build time.)_
 
 ---
 
-### ⚙️ Environment Configuration (`environment-rules.yaml` or `.json`)
+### 3. Environment Configuration (`environment-rules.yaml` or `.json`)
 
 You can use either **`environment-rules.yaml`** (recommended for adding comments) or `environment-rules.json`:
 
@@ -70,8 +73,9 @@ directCopyRules:
   Info.plist: 'App_Resources/iOS/Info.plist'
   GoogleService-Info.plist: 'App_Resources/iOS/GoogleService-Info.plist'
   Podfile: 'App_Resources/iOS/Podfile'
+  google-services.json: 'App_Resources/Android/google-services.json'
 
-# Master App Icon path (Automatically resizes for iOS & generates Android 8+ Adaptive Icons)
+# Master App Icon path (Automatically resizes for iOS & generates Android 8+ Adaptive Icons & Android 12+ Splash)
 appIconPath: 'environments/app-icon/icon.png'
 
 # Environment Definitions
@@ -94,8 +98,9 @@ environments:
 # Build for Development (Uses default env)
 ns run android
 
-# Build for Staging / Release
-ns run ios --env.use.release
+# Build for Staging or Release (Supports aliases like --env.use.dev, --env.use.staging, --env.use.prod)
+ns run ios --env.use.staging
+ns run android --env.use.release
 ```
 
 ---
@@ -175,9 +180,13 @@ directCopyRules:
 ## 🛠 Features & Capabilities
 
 - 🎯 **Dynamic App Bundle ID**: Set per-environment App IDs directly in `environment-rules.yaml`, with optional platform overrides (`{ "android": "...", "ios": "..." }`).
-- 📁 **Smart File Swapping**: Automatically matches files like `environment.staging.ts` $\rightarrow$ `environment.ts` or `GoogleService-Info.dev.plist` $\rightarrow$ `GoogleService-Info.plist` during build.
-- 🎨 **App Icon & Splash Generation**: Integrates with NativeScript resource generator to build environment-specific App Icons. Automatically handles Android 8+ Adaptive Icons (`ic_launcher_foreground.png` with transparent background, monochrome layers, and `ic_launcher_background.xml` color extraction) and applies 66.7% Safe Zone padding to Android 12+ Splash logos (`splash_screen_logo.png`).
+- 📁 **Smart File Swapping & Aliases**: Automatically matches files like `environment.staging.ts` $\rightarrow$ `environment.ts` or `GoogleService-Info.dev.plist` $\rightarrow$ `GoogleService-Info.plist` during build. Supports alias matching (e.g. `--env.use.dev` matches `development`).
+- 🎨 **App Icon & Splash Generation**: Single `appIconPath` source generates all icons automatically:
+  - **Android 8+ Adaptive Icons**: Generates transparent foreground (`ic_launcher_foreground.png`) with **66.7% Safe Zone padding (72dp / 108dp)**, matching background layer (`ic_launcher_background.png`), monochrome layers, and extracts corner color to `ic_launcher_background.xml`.
+  - **Android 12+ Splash Logos**: Automatically scales master icons to **48.2% Safe Zone ($\frac{115}{160 \times \sqrt{2}}$)** onto transparent canvases (`drawable-*/splash_screen_logo.png`) to fit Android 12+ circular viewports without corner clipping.
+  - **iOS App Icons**: Generates full `AppIcon.appiconset` resolutions.
 - 🔢 **Auto Versioning**: Manages `versionName`, `versionCode`, and `buildNumber` across builds with platform isolation (`{ "android": "...", "ios": "..." }`).
+- 🛡️ **Zero Source Pollution**: Hooks automatically back up and restore modified configuration files, keeping working trees clean.
 
 ---
 
@@ -235,7 +244,7 @@ make help             # list all commands
 
 | Branch      | Purpose               | Publishes                          |
 | ----------- | --------------------- | ---------------------------------- |
-| `master`    | production line       | CI only (no publish)               |
+| `main`      | production line       | CI only (no publish)               |
 | `develop`   | integration           | `dev` pre-releases                 |
 | `release/*` | release stabilization | `alpha` → `beta` → `rc` → `latest` |
 | `feature/*` | working branches      | —                                  |
