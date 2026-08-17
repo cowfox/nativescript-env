@@ -3,8 +3,14 @@ import * as fs from 'fs';
 import * as plist from 'plist';
 import * as envRulesUtils from './utils/env-rules';
 import * as fileUtils from './utils/file';
+import * as processes from './utils/processes';
 
 export = async function ($logger: any, $projectData: any, hookArgs: any) {
+  if (process.env.NEO_ENV_AFTER_HOOK_RUNNING === 'true') {
+    return;
+  }
+  process.env.NEO_ENV_AFTER_HOOK_RUNNING = 'true';
+
   const platformNameFromHookArgs = hookArgs && (hookArgs.platform || (hookArgs.prepareData && hookArgs.prepareData.platform));
   const platformName = (platformNameFromHookArgs || '').toLowerCase();
   const projectName = $projectData.projectName;
@@ -15,9 +21,11 @@ export = async function ($logger: any, $projectData: any, hookArgs: any) {
   );
   const envRulesContent = envRulesUtils.readEnvRules(envRulesFilePath);
 
-  $logger.info(`-o[NeoEnv]o--> After "prepare" hook - updating "version info" on platform: "${platformName}"`);
+  $logger.debug?.(`[NeoEnv] 🧹 After prepare hook running on platform: "${platformName}"`);
 
   const platformFolderPath = path.join($projectData.platformsDir, platformName);
+  const platformVersionCode = envRulesUtils.getPlatformValue(envRulesContent.versionCode, platformName);
+
   if (platformName === 'ios') {
     const projectInfoPlistPath = path.join(
       platformFolderPath,
@@ -27,7 +35,7 @@ export = async function ($logger: any, $projectData: any, hookArgs: any) {
       let infoPlistContent: any = plist.parse(fs.readFileSync(projectInfoPlistPath, 'utf8'));
 
       infoPlistContent['CFBundleShortVersionString'] = envRulesContent.version;
-      infoPlistContent['CFBundleVersion'] = envRulesContent.versionCode;
+      infoPlistContent['CFBundleVersion'] = platformVersionCode;
 
       fs.writeFileSync(projectInfoPlistPath, plist.build(infoPlistContent));
     }
@@ -44,12 +52,12 @@ export = async function ($logger: any, $projectData: any, hookArgs: any) {
     fileUtils.replaceContentInFile(
       $logger,
       /(android:versionCode=")[\d.]+(")/,
-      `$1${envRulesContent.versionCode}$2`,
+      `$1${platformVersionCode}$2`,
       projectAndroidManifestPath
     );
   }
 
-  $logger.info(`-o[NeoEnv]o--> Updated version "${envRulesContent.version}" with version code "${envRulesContent.versionCode}"`);
+  $logger.debug?.(`[NeoEnv] 🧹 Updated native build manifest version to "${envRulesContent.version}" (${platformVersionCode})`);
 
   if (platformName === 'android') {
     let matchPatternStr = envRulesContent.envFilesMatchRules;
@@ -64,4 +72,10 @@ export = async function ($logger: any, $projectData: any, hookArgs: any) {
     $logger.info(`-o[NeoEnv]o--> Deleting unused env files from "${targetFolderPath}"`);
     fileUtils.detectAndDeleteEnvFiles($logger, targetFolderPath, deleteMatchPattern);
   }
+
+  // Restore original project configuration files (nativescript.config.ts / package.json)
+  processes.restoreAppBundleIdBackup($logger, $projectData);
+
+  // Reset flag for future hook runs
+  delete process.env.NEO_ENV_HOOK_RUNNING;
 };

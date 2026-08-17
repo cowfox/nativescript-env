@@ -27,7 +27,11 @@ else
 	pnpm test
 endif
 
-.PHONY: exports
+.PHONY: cover
+cover: ## Run tests with coverage (alias for make test coverage)
+	@echo "🧪 Running tests with coverage..."
+	pnpm test:coverage
+
 exports: ## Validate published package (publint)
 	@echo "🔗 Validating package exports..."
 	pnpm check:exports

@@ -13,14 +13,6 @@ export function detectAndCopyEnvFiles(
   const matchRules = new RegExp(matchRulesString);
   const dirContents = fs.readdirSync(folderFullPath);
 
-  const doDirectFileCopy = (filename: string, filePath: string) => {
-    if (directCopyRules && Object.keys(directCopyRules).includes(filename)) {
-      const destinationFilePath = path.join(projectData.projectDir, directCopyRules[filename]);
-      logger.info(`-o[NeoEnv]o--> Direct copying a file "${filename}" to "${directCopyRules[filename]}"`);
-      fs.writeFileSync(destinationFilePath, fs.readFileSync(filePath));
-    }
-  };
-
   const testEnvFileToCopy = (parentPath: string, item: string) => {
     const itemPath = path.join(parentPath, item);
 
@@ -30,20 +22,25 @@ export function detectAndCopyEnvFiles(
           testEnvFileToCopy(path.join(parentPath, item), deeperItem)
         );
       } else {
-        logger.debug?.('-o[NeoEnv]o--- Check file:', item);
+        logger.debug?.('[NeoEnv] 🔍 Checking file:', item);
         if (matchRules.test(item)) {
           const destinationFileName = buildDestinationFileName(logger, item, matchRules);
           const destinationFilePath = path.join(parentPath, destinationFileName);
 
-          logger.info(`-o[NeoEnv]o--> Copying env. file "${item}" to "${destinationFileName}"`);
-
           if (!doesSourceMatchDestination(logger, itemPath, destinationFilePath)) {
             fs.writeFileSync(destinationFilePath, fs.readFileSync(itemPath));
           } else {
-            logger.debug?.('-o[NeoEnv]o--x Not writing new file, as file that exists matches the file that it will be replaced with.');
+            logger.debug?.('[NeoEnv] ℹ️ Destination matches source, skipping write.');
           }
 
-          doDirectFileCopy(destinationFileName, itemPath);
+          if (directCopyRules && Object.keys(directCopyRules).includes(destinationFileName)) {
+            const relTarget = directCopyRules[destinationFileName];
+            const destinationTargetFilePath = path.join(projectData.projectDir, relTarget);
+            fs.writeFileSync(destinationTargetFilePath, fs.readFileSync(itemPath));
+            logger.info(`[NeoEnv] ⚡ Swapped & Deployed -> "${item}" => "${relTarget}"`);
+          } else {
+            logger.info(`[NeoEnv] 📄 Swapped         -> "${item}" => "${destinationFileName}"`);
+          }
         }
       }
     } catch (_error) {}
@@ -68,7 +65,7 @@ export function detectAndDeleteEnvFiles(logger: any, folderFullPath: string, mat
         );
       } else {
         if (matchRules.test(item)) {
-          logger.info('-o[NeoEnv]o--> Delete a `env.` based file:', itemPath);
+          logger.info?.('[NeoEnv] 🧹 Deleted env variant:', itemPath);
           fs.unlinkSync(itemPath);
         }
       }
@@ -94,10 +91,12 @@ export function replaceContentInFile(logger: any, pattern: RegExp, replacement: 
   }
 }
 
-function buildDestinationFileName(logger: any, file: string, regex: RegExp): string {
+export function buildDestinationFileName(logger: any, file: string, regex: RegExp): string {
   const matches = file.match(regex);
-  if (Array.isArray(matches) && matches.length === 4) {
-    return `${matches[1]}${matches[3]}`;
+  if (Array.isArray(matches) && matches.length >= 4) {
+    const base = matches[1];
+    const ext = matches[matches.length - 1];
+    return `${base}${ext}`;
   } else {
     const rawPattern = regex.source || String(regex);
     const cleanPattern = rawPattern.replace(/^\/|\/$/g, '');
@@ -116,7 +115,7 @@ function buildDestinationFileName(logger: any, file: string, regex: RegExp): str
   }
 }
 
-function doesSourceMatchDestination(logger: any, sourcePath: string, destinationPath: string): boolean {
+export function doesSourceMatchDestination(logger: any, sourcePath: string, destinationPath: string): boolean {
   if (!fs.existsSync(sourcePath)) {
     throw new Error(`-o[NeoEnv]o--x Source file "${sourcePath}" does not exist!`);
   }
@@ -130,4 +129,32 @@ function doesSourceMatchDestination(logger: any, sourcePath: string, destination
   const destinationFileContents = fs.readFileSync(destinationPath);
 
   return sourceFileContents.equals(destinationFileContents);
+}
+
+export function copyAppResources(
+  logger: any,
+  appResourcesFolder: string,
+  matchRulesString: string,
+  directCopyRules: Record<string, string>,
+  projectData: any
+): void {
+  detectAndCopyEnvFiles(logger, appResourcesFolder, matchRulesString, directCopyRules, projectData);
+}
+
+export function copyExtraFolders(
+  logger: any,
+  extraPaths: string[] | undefined,
+  matchRulesString: string,
+  directCopyRules: Record<string, string>,
+  projectData: any
+): void {
+  if (!extraPaths) return;
+  extraPaths.forEach((folderPath) => {
+    const cachedDir = projectData.$projectHelper?.cachedProjectDir || projectData.projectDir;
+    const folderFullPath = folderPath.indexOf(cachedDir) < 0
+      ? path.join(cachedDir, folderPath)
+      : folderPath;
+
+    detectAndCopyEnvFiles(logger, folderFullPath, matchRulesString, directCopyRules, projectData);
+  });
 }

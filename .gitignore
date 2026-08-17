@@ -1,8 +1,8 @@
 .idea
 .dist
 lib/
-package-lock.json
 node_modules
+coverage/
 
 # Environment (loaded by makefiles/version.mk for changelog tokens)
 .env
