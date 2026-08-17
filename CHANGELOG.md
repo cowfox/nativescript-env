@@ -1,5 +1,13 @@
 # @wuneo/nativescript-env
 
+## 1.0.1-beta.22
+
+### Patch Changes
+
+- 2cb229c: # Changelog
+
+  - fix(icon): ensure full density generation for mipmap backgrounds and splash logos
+
 ## 1.0.1-beta.21
 
 ### Patch Changes
