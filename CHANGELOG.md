@@ -1,5 +1,13 @@
 # @wuneo/nativescript-env
 
+## 1.0.1-beta.21
+
+### Patch Changes
+
+- 714f3bc: # Changelog
+
+  - feat: modularize utils, add Android 12+ splash safe-zone scaling and vitest unit tests
+
 ## 1.0.1-beta.20
 
 ### Patch Changes
