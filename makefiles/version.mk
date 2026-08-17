@@ -265,7 +265,7 @@ endif
 # -----------------------------------------------------------------------------
 
 .PHONY: release
-release: ## Bump pre-release version and commit (subcommand: push → also push)
+release: ## Bump version and commit (subcommand: push → also push)
 	@BRANCH=$$($(GET_BRANCH)); \
 	IS_RELEASE=$(IS_RELEASE_BRANCH); \
 	if [ "$$BRANCH" = "master" ]; then \
@@ -276,33 +276,30 @@ release: ## Bump pre-release version and commit (subcommand: push → also push)
 		echo "❌ release 仅限 release/* 或 develop 分支  当前分支: $$BRANCH"; \
 		exit 1; \
 	fi; \
-	if [ ! -f ".changeset/pre.json" ]; then \
-		echo "❌ 未进入 pre-release 模式  请先执行: make pre alpha (或 dev/beta/rc)"; \
-		exit 1; \
-	fi; \
+	PRE_MODE=$$(node -p "try { require('./.changeset/pre.json').mode } catch(e) { '' }"); \
 	PENDING_CHANGESETS=$$(find .changeset -maxdepth 1 -name "*.md" ! -name "README.md" 2>/dev/null); \
-	if [ -z "$$PENDING_CHANGESETS" ]; then \
-		echo "⚠️  没有找到待处理的 changeset  请先运行: make changeset auto"; \
-		exit 1; \
+	if [ -n "$$PENDING_CHANGESETS" ] || [ "$$PRE_MODE" = "exit" ]; then \
+		echo "🚀 Pushing commits to remote (for changelog generation)..."; \
+		git push -u origin "$$BRANCH" 2>/dev/null || true; \
+		echo ""; \
+		echo "📦 Applying pending changesets..."; \
+		$(LOAD_ENV); pnpm changeset version; \
 	fi; \
-	echo "🚀 Pushing commits to remote (for changelog generation)..."; \
-	git push -u origin "$$BRANCH"; \
-	echo ""; \
-	echo "📦 Applying pending changesets..."; \
-	$(LOAD_ENV); pnpm changeset version; \
 	VERSION=$$($(GET_VERSION)); \
 	PKG_NAME=$$($(GET_PKG_NAME)); \
 	echo "📋 版本 ($(APP)): $$VERSION"; \
-	if ! echo "$$VERSION" | grep -q "-"; then \
-		echo "❌ 版本号不是 pre-release 格式: $$VERSION"; \
+	if [ "$$PRE_MODE" = "pre" ] && ! echo "$$VERSION" | grep -q "-"; then \
+		echo "❌ 预发布模式下版本号应为 pre-release 格式: $$VERSION"; \
 		exit 1; \
 	fi; \
-	echo "📝 Committing version bump..."; \
-	git add -A; \
-	if [ "$(SCOPED_RELEASE)" = "1" ]; then \
-		git commit --no-verify -m "🐳 chore(release): Bump \`$$PKG_NAME\` to \`$$VERSION\`"; \
-	else \
-		git commit --no-verify -m "🐳 chore(release): Bump version to \`$$VERSION\`"; \
+	if [ -n "$$(git status --porcelain package.json CHANGELOG.md .changeset)" ]; then \
+		echo "📝 Committing version bump..."; \
+		git add -A; \
+		if [ "$(SCOPED_RELEASE)" = "1" ]; then \
+			git commit --no-verify -m "🐳 chore(release): Bump \`$$PKG_NAME\` to \`$$VERSION\`"; \
+		else \
+			git commit --no-verify -m "🐳 chore(release): Bump version to \`$$VERSION\`"; \
+		fi; \
 	fi; \
 	if [ "$(SUBCMD)" = "push" ]; then \
 		echo "🚀 Pushing branch to remote..."; \
