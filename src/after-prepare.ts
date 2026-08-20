@@ -16,7 +16,7 @@ export = async function ($logger: any, $projectData: any, hookArgs: any) {
   const projectName = $projectData.projectName;
 
   const envRulesFilePath = envRulesUtils.getEnvRulesFilePath(
-    `environment-rules.${platformName}.json`,
+    'environment-rules.yaml',
     $projectData.projectDir
   );
   const envRulesContent = envRulesUtils.readEnvRules(envRulesFilePath);

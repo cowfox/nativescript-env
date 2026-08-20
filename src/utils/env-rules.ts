@@ -9,6 +9,29 @@ export interface EnvironmentEntry {
   [key: string]: any;
 }
 
+export interface ArtifactsAndroidConfig {
+  packAab?: boolean;
+  packApk?: boolean;
+  packNativeSymbols?: boolean;
+  packMapping?: boolean;
+}
+
+export interface ArtifactsIosConfig {
+  packArchive?: boolean;
+  packDsym?: boolean;
+  autoUploadCrashlytics?: boolean;
+}
+
+export interface ArtifactsConfig {
+  enabled?: boolean;
+  outputDir?: string;
+  appName?: string;
+  versionFolder?: boolean;
+  clean?: boolean;
+  android?: ArtifactsAndroidConfig;
+  ios?: ArtifactsIosConfig;
+}
+
 export interface EnvironmentRulesContent {
   version?: string;
   buildNumber?: string | number | { android?: string; ios?: string; default?: string; [key: string]: any };
@@ -19,6 +42,7 @@ export interface EnvironmentRulesContent {
   envFilesMatchRules?: string;
   directCopyRules?: Record<string, string>;
   appIconPath?: string;
+  artifacts?: ArtifactsConfig;
   environments: EnvironmentEntry[];
   [key: string]: any;
 }

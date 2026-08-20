@@ -59,8 +59,7 @@ export function getAppId(projectDirOrOptions?: string | GetAppIdOptions, fallbac
 
   // 3. Read environment rules file
   try {
-    const envRulesFileName = `environment-rules.${platform}.json`;
-    const envRulesFilePath = getEnvRulesFilePath(envRulesFileName, projectDir);
+    const envRulesFilePath = getEnvRulesFilePath('environment-rules.yaml', projectDir);
     const envRulesContent = readEnvRules(envRulesFilePath);
 
     if (!envName) {

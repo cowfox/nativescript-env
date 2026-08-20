@@ -28,3 +28,10 @@ export {
   copyAppResources,
   copyExtraFolders
 } from './file';
+
+export {
+  collectAndroidArtifacts,
+  collectIosArtifacts,
+  printArtifactsSummary,
+  resolveArtifactsConfig
+} from './artifacts';

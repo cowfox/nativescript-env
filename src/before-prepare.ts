@@ -17,6 +17,7 @@ export = async function (
   }
   process.env.NEO_ENV_HOOK_RUNNING = 'true';
   delete process.env.NEO_ENV_AFTER_HOOK_RUNNING;
+  delete process.env.NEO_ENV_AFTER_BUILD_DONE;
 
   const platformName = hookArgs?.prepareData?.platform?.toLowerCase() || '';
   const platformData = $platformsDataService.getPlatformData(platformName, $projectData);
@@ -24,7 +25,7 @@ export = async function (
   const appResourcesFolder = path.join($projectData.appResourcesDirectoryPath, platformData.normalizedPlatformName);
 
   const envRulesFilePath = envRulesUtils.getEnvRulesFilePath(
-    `environment-rules.${platformData.platformNameLowerCase}.json`,
+    'environment-rules.yaml',
     $projectData.projectDir
   );
   $logger.debug(`-o[NeoEnv]o--> Target "Env Rules" file path: ${envRulesFilePath}`);
