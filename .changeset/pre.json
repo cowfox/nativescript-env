@@ -1,0 +1,10 @@
+{
+  "mode": "pre",
+  "tag": "beta",
+  "initialVersions": {
+    "@wuneo/nativescript-env": "1.0.1"
+  },
+  "changesets": [
+    "release-artifacts-packaging"
+  ]
+}
