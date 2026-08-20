@@ -40,6 +40,36 @@
         "type": "after-prepare",
         "script": "lib/after-prepare",
         "inject": true
+      },
+      {
+        "type": "after-build",
+        "script": "lib/after-build",
+        "inject": true
+      },
+      {
+        "type": "after-buildIOS",
+        "script": "lib/after-build",
+        "inject": true
+      },
+      {
+        "type": "after-buildAndroid",
+        "script": "lib/after-build",
+        "inject": true
+      },
+      {
+        "type": "after-build-ios",
+        "script": "lib/after-build",
+        "inject": true
+      },
+      {
+        "type": "after-build-android",
+        "script": "lib/after-build",
+        "inject": true
+      },
+      {
+        "type": "after-postBuild",
+        "script": "lib/after-build",
+        "inject": true
       }
     ]
   },
