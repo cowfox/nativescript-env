@@ -122,11 +122,49 @@ cut: ## Create a release branch from develop (subcommands: patch, minor, major)
 # Changeset — 创建变更描述
 # -----------------------------------------------------------------------------
 
+# 「起点」= 最后一次改动 .changeset/*.md 的 commit (没有则回退到分支分叉点)。
+# auto 与 status 共用这个判定: 起点..HEAD 之间没有新 commit ⇒ 已有的 changeset
+# 就覆盖了全部改动, 无需再生成 (auto 此时直接退出, 不写空文件)。
+CS_BASE_REF    = git log -1 --format="%H" -- ".changeset/*.md" ":!.changeset/README.md" 2>/dev/null | head -1
+CS_FORK_REF    = git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null || git merge-base HEAD develop 2>/dev/null || git rev-list --max-parents=0 HEAD
+CS_NEW_COMMITS = git log --oneline --no-merges --invert-grep --grep="chore(release):"
+CS_FILES       = find .changeset -maxdepth 1 -name "*.md" ! -name "README.md" 2>/dev/null
+
 .PHONY: changeset
 changeset: ## Create a changeset (subcommands: auto, status)
 ifeq ($(SUBCMD),status)
-	@echo "📋 Pending changesets:"
-	pnpm changeset status
+	@echo "📋 changeset 状态"; echo ""; \
+	PENDING=$$($(CS_FILES) | sort); \
+	if [ -n "$$PENDING" ]; then \
+		echo "📄 changeset 文件:"; \
+		for f in $$PENDING; do echo "   • $$(basename $$f)  —  $$(head -2 "$$f" | tail -1)"; done; \
+	else \
+		echo "📄 changeset 文件: (无)"; \
+	fi; \
+	echo ""; \
+	if [ -f ".changeset/pre.json" ]; then \
+		echo "🔖 pre 模式: $$(node -p "require('./.changeset/pre.json').tag" 2>/dev/null)"; \
+		CONSUMED=$$(node -p "(require('./.changeset/pre.json').changesets||[]).join(', ')" 2>/dev/null); \
+		if [ -n "$$CONSUMED" ]; then \
+			echo "   已被预发布消费: $$CONSUMED"; \
+			echo "   (消费过的 changeset 不会再触发 bump —— 要出下一个预发布版, 需要新的 changeset)"; \
+		else \
+			echo "   已被预发布消费: (无)"; \
+		fi; \
+		echo ""; \
+	fi; \
+	BASE_REF=$$($(CS_BASE_REF)); \
+	if [ -n "$$BASE_REF" ]; then WHENCE="上一次 changeset 提交"; \
+	else BASE_REF=$$($(CS_FORK_REF)); WHENCE="分支分叉点"; fi; \
+	echo "📌 起点: $$WHENCE ($$(git log -1 --format='%h %s' $$BASE_REF))"; \
+	COMMITS=$$($(CS_NEW_COMMITS) "$$BASE_REF..HEAD" 2>/dev/null); \
+	if [ -n "$$COMMITS" ]; then \
+		echo "📝 起点之后的新 commit (make changeset auto 会收集这些):"; echo "$$COMMITS"; echo ""; \
+		echo "💡 下一步: make changeset auto"; \
+	else \
+		echo "📝 起点之后没有新 commit"; echo ""; \
+		echo "✅ 无需再跑 make changeset auto"; \
+	fi
 else ifeq ($(SUBCMD),auto)
 	@BRANCH=$$($(GET_BRANCH)); \
 	if [ "$$BRANCH" = "main" ] || [ "$$BRANCH" = "master" ]; then \
@@ -135,26 +173,27 @@ else ifeq ($(SUBCMD),auto)
 	fi; \
 	echo "🔍 从 commit 历史生成 changeset (APP=$(APP))..."; \
 	echo ""; \
-	LAST_CHANGESET_COMMIT=$$(git log -1 --format="%H" -- ".changeset/*.md" ":!.changeset/README.md" 2>/dev/null | head -1); \
+	LAST_CHANGESET_COMMIT=$$($(CS_BASE_REF)); \
 	if [ -n "$$LAST_CHANGESET_COMMIT" ]; then \
 		BASE_REF="$$LAST_CHANGESET_COMMIT"; \
 		echo "📌 起点: 上一次 changeset 提交 ($$(git log -1 --format='%h %s' $$BASE_REF))"; \
 	else \
-		BASE_REF=$$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null || git merge-base HEAD develop 2>/dev/null || git rev-list --max-parents=0 HEAD); \
+		BASE_REF=$$($(CS_FORK_REF)); \
 		echo "📌 起点: 分支分叉点 ($$(git log -1 --format='%h %s' $$BASE_REF))"; \
 	fi; \
 	echo ""; \
 	IS_RELEASE=$(IS_RELEASE_BRANCH); \
-	COMMITS=$$(git log --oneline --no-merges --invert-grep --grep="chore(release):" "$$BASE_REF..HEAD" 2>/dev/null); \
-	if [ -n "$$COMMITS" ]; then \
-		echo "📝 找到以下 commit:"; echo "$$COMMITS"; echo ""; \
-	else \
-		echo "⚠️  没有找到新的 commit (自上次 changeset 以来)"; echo ""; \
+	COMMITS=$$($(CS_NEW_COMMITS) "$$BASE_REF..HEAD" 2>/dev/null); \
+	if [ -z "$$COMMITS" ]; then \
+		echo "✅ 起点之后没有新 commit —— 已有的 changeset 已覆盖全部改动, 无需生成 (未写入任何文件)"; \
+		echo ""; \
+		echo "💡 查看完整状态: make changeset status"; \
+		echo "   确实要手写一条: make changeset  (交互式)"; \
+		exit 0; \
 	fi; \
+	echo "📝 找到以下 commit:"; echo "$$COMMITS"; echo ""; \
 	if [ "$$IS_RELEASE" = "yes" ]; then \
 		BUMP="patch"; echo "📌 release/* 分支: 版本级别固定为 patch"; \
-	elif [ -z "$$COMMITS" ]; then \
-		BUMP="patch"; \
 	else \
 		HAS_BREAKING=$$(echo "$$COMMITS" | grep -i "breaking\|!" || true); \
 		HAS_FEAT=$$(echo "$$COMMITS" | grep -iE "^[a-f0-9]+ ✨|^[a-f0-9]+ feat" || true); \
@@ -169,7 +208,7 @@ else ifeq ($(SUBCMD),auto)
 	printf -- "---\n'$$PKG_NAME': $$BUMP\n---\n\n# Changelog\n\n$$NOTES\n" > "$$FILENAME"; \
 	echo "✅ 已生成: $$FILENAME"; echo ""; \
 	cat "$$FILENAME"; echo ""; \
-	if [ -n "$$COMMITS" ]; then git add .changeset/; echo "✅ 已暂存 changeset"; fi; echo ""; echo "💡 建议 commit message:"; echo "   🐳 chore(changeset): Add new changeset"
+	git add .changeset/; echo "✅ 已暂存 changeset"; echo ""; echo "💡 建议 commit message:"; echo "   🐳 chore(changeset): Add new changeset"
 else
 	@BRANCH=$$($(GET_BRANCH)); \
 	if [ "$$BRANCH" = "main" ] || [ "$$BRANCH" = "master" ]; then \
