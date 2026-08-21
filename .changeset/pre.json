@@ -5,6 +5,7 @@
     "@wuneo/nativescript-env": "1.0.1"
   },
   "changesets": [
+    "1787354523-auto-generated",
     "release-artifacts-packaging"
   ]
 }

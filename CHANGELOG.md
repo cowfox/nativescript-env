@@ -1,5 +1,14 @@
 # @wuneo/nativescript-env
 
+## 1.1.0-beta.1
+
+### Patch Changes
+
+- 0eab40c: # Changelog
+
+  - feat: add isReleaseBuild utility and refactor artifact collection to use it for release verification
+  - 🐞 fix(version): Sync changeset auto/status fix from shared-tooling
+
 ## 1.1.0-beta.0
 
 ### Minor Changes
