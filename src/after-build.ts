@@ -3,7 +3,8 @@ import * as envRulesUtils from './utils/env-rules';
 import {
   collectAndroidArtifacts,
   collectIosArtifacts,
-  printArtifactsSummary
+  printArtifactsSummary,
+  isReleaseBuild
 } from './utils/artifacts';
 
 let lastRunTimestamp = 0;
@@ -57,13 +58,13 @@ export = async function ($logger: any, $projectData: any, hookArgs?: any) {
       }
     }
 
-    const isRelease =
-      buildData?.release === true ||
-      argv.includes('--release') ||
-      argv.some((a) => a.includes('release') || a.includes('--for-device') || a.includes('--key-store')) ||
-      ['release', 'production', 'prod'].includes(envName.toLowerCase());
+    const isRelease = isReleaseBuild(hookArgs, process.argv);
+    if (!isRelease) {
+      $logger.debug?.('[NeoEnv] ℹ️ Skipping artifact collection: not a release build (debug or device run mode).');
+      return;
+    }
 
-    $logger.info?.(`[NeoEnv] 📦 Processing build artifacts (platform: "${platform}", env: "${envName}")...`);
+    $logger.info?.(`[NeoEnv] 📦 Processing release build artifacts (platform: "${platform}", env: "${envName}")...`);
 
     if (platform === 'android' || !platform) {
       const androidRes = collectAndroidArtifacts(

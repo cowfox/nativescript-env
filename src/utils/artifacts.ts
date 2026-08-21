@@ -48,6 +48,33 @@ export function resolveArtifactsConfig(envRules?: EnvironmentRulesContent): Requ
 }
 
 /**
+ * Detects whether the current build execution is a release build.
+ * Debug builds, simulator runs, or development device runs without `--release` are excluded.
+ */
+export function isReleaseBuild(hookArgs?: any, argv: string[] = process.argv): boolean {
+  const buildData = hookArgs?.buildData || hookArgs?.prepareData;
+  const options = hookArgs?.options;
+
+  // 1. Hook data flags provided by NativeScript CLI
+  if (buildData?.release === true || hookArgs?.release === true || options?.release === true) {
+    return true;
+  }
+
+  if (buildData?.env?.release === true || options?.env?.release === true) {
+    return true;
+  }
+
+  // 2. Command line arguments
+  const normalizedArgv = argv.map((a) => a.toLowerCase());
+  return (
+    normalizedArgv.includes('--release') ||
+    normalizedArgv.includes('-release') ||
+    normalizedArgv.includes('--env.release') ||
+    normalizedArgv.some((a) => a === '--release' || a.startsWith('--release=') || a === '-r')
+  );
+}
+
+/**
  * Resolves a clean application name for file naming
  */
 export function resolveAppName(projectDir: string, explicitAppName?: string, fallbackName?: string): string {
