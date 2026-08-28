@@ -33,7 +33,7 @@ export interface ArtifactsConfig {
 }
 
 export interface EnvironmentRulesContent {
-  version?: string;
+  version?: string | { android?: string; ios?: string; default?: string; [key: string]: any };
   buildNumber?: string | number | { android?: string; ios?: string; default?: string; [key: string]: any };
   versionCode?: string | number | { android?: string; ios?: string; default?: string; [key: string]: any };
   autoVersionCode?: boolean;

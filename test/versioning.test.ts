@@ -111,23 +111,48 @@ describe('versioning.ts', () => {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     });
 
-    it('should reset build number to 1 when package.json version is bumped', () => {
+    it('should reset build number to 1 for current platform only and not affect other platform until it builds', () => {
       const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'neo-env-test-'));
       const pkgPath = path.join(tmpDir, 'package.json');
       fs.writeFileSync(pkgPath, JSON.stringify({ version: '6.11.0' }), 'utf8');
 
-      const envRules: any = {
+      let envRules: any = {
         version: '6.10.1',
-        buildNumber: { ios: '15', android: '15' },
-        versionCode: { ios: '6100115', android: '6100115' },
+        buildNumber: { ios: '15', android: '18' },
+        versionCode: { ios: '6100115', android: '6100118' },
         autoVersionCode: true,
         environments: []
       };
 
-      const result = updateVersioning(mockLogger, false, envRules, { projectDir: tmpDir }, 'android');
-      expect(result.version).toBe('6.11.0');
-      expect(result.buildNumber.android).toBe('1');
-      expect(result.buildNumber.ios).toBe('1');
+      // 1. First build iOS in release mode
+      envRules = updateVersioning(mockLogger, true, envRules, { projectDir: tmpDir }, 'ios');
+      expect(envRules.version).toEqual({ ios: '6.11.0', android: '6.10.1' });
+      expect(envRules.buildNumber.ios).toBe('1');
+      expect(envRules.buildNumber.android).toBe('18'); // untouched!
+      expect(envRules.versionCode.ios).toBe('6110001');
+      expect(envRules.versionCode.android).toBe('6100118');
+
+      // 2. Next build Android in release mode (should start at build 1, NOT 2 or 19!)
+      envRules = updateVersioning(mockLogger, true, envRules, { projectDir: tmpDir }, 'android');
+      expect(envRules.version).toBe('6.11.0'); // merged back to string since both are now 6.11.0
+      expect(envRules.buildNumber.android).toBe('1');
+      expect(envRules.buildNumber.ios).toBe('1');
+      expect(envRules.versionCode.android).toBe('6110001');
+      expect(envRules.versionCode.ios).toBe('6110001');
+
+      // 3. Build iOS again in release mode (should bump to build 2)
+      envRules = updateVersioning(mockLogger, true, envRules, { projectDir: tmpDir }, 'ios');
+      expect(envRules.buildNumber.ios).toBe('2');
+      expect(envRules.buildNumber.android).toBe('1');
+      expect(envRules.versionCode.ios).toBe('6110002');
+      expect(envRules.versionCode.android).toBe('6110001');
+
+      // 4. Build Android again in release mode (should bump to build 2)
+      envRules = updateVersioning(mockLogger, true, envRules, { projectDir: tmpDir }, 'android');
+      expect(envRules.buildNumber.android).toBe('2');
+      expect(envRules.buildNumber.ios).toBe('2');
+      expect(envRules.versionCode.android).toBe('6110002');
+      expect(envRules.versionCode.ios).toBe('6110002');
 
       fs.rmSync(tmpDir, { recursive: true, force: true });
     });

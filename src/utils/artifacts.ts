@@ -262,7 +262,7 @@ export function collectAndroidArtifacts(
     return null;
   }
 
-  const version = envRules.version || '1.0.0';
+  const version = getPlatformValue(envRules.version, 'android', '1.0.0');
   const buildNumber = getPlatformValue(envRules.buildNumber, 'android', '1');
   const appName = resolveAppName(projectDir, config.appName, fallbackProjectName);
   const outDir = resolveReleaseOutputDir(projectDir, config, version, buildNumber, envName, 'android');
@@ -415,7 +415,7 @@ export function collectIosArtifacts(
     return null;
   }
 
-  const version = envRules.version || '1.0.0';
+  const version = getPlatformValue(envRules.version, 'ios', '1.0.0');
   const buildNumber = getPlatformValue(envRules.buildNumber, 'ios', '1');
   const appName = resolveAppName(projectDir, config.appName, fallbackProjectName);
   const outDir = resolveReleaseOutputDir(projectDir, config, version, buildNumber, envName, 'ios');
