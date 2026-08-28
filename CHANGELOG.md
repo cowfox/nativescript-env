@@ -1,5 +1,13 @@
 # @wuneo/nativescript-env
 
+## 1.1.0-beta.2
+
+### Patch Changes
+
+- fdafc48: # Changelog
+
+  - feat: enable platform-specific versioning to allow independent build number incrementing per target
+
 ## 1.1.0-beta.1
 
 ### Patch Changes
