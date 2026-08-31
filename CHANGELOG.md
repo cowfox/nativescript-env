@@ -1,5 +1,13 @@
 # @wuneo/nativescript-env
 
+## 1.1.0-beta.3
+
+### Patch Changes
+
+- 2149b7c: # Changelog
+
+  - ✨ feat: enable environment-based filtering for Firebase Crashlytics auto-upload and update YAML/JSON formatting rules
+
 ## 1.1.0-beta.2
 
 ### Patch Changes
