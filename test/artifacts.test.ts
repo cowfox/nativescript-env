@@ -65,6 +65,28 @@ describe('artifacts.ts', () => {
       expect(config.android.packNativeSymbols).toBe(false);
       expect(config.ios.autoUploadCrashlytics).toBe(true);
     });
+
+    it('should support string or array env filters for autoUploadCrashlytics', () => {
+      const configWithArray = resolveArtifactsConfig({
+        environments: [],
+        artifacts: {
+          ios: {
+            autoUploadCrashlytics: ['release', 'prod'],
+          },
+        },
+      });
+      expect(configWithArray.ios.autoUploadCrashlytics).toEqual(['release', 'prod']);
+
+      const configWithString = resolveArtifactsConfig({
+        environments: [],
+        artifacts: {
+          ios: {
+            autoUploadCrashlytics: 'release',
+          },
+        },
+      });
+      expect(configWithString.ios.autoUploadCrashlytics).toBe('release');
+    });
   });
 
   describe('resolveAppName', () => {

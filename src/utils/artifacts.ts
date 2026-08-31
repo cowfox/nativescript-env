@@ -42,7 +42,7 @@ export function resolveArtifactsConfig(envRules?: EnvironmentRulesContent): Requ
     ios: {
       packArchive: custom.ios?.packArchive !== false,
       packDsym: custom.ios?.packDsym !== false,
-      autoUploadCrashlytics: custom.ios?.autoUploadCrashlytics === true,
+      autoUploadCrashlytics: custom.ios?.autoUploadCrashlytics ?? false,
     },
   };
 }
@@ -551,9 +551,22 @@ export function collectIosArtifacts(
     } catch (_e) {}
   }
 
-  // 4. Optional Firebase Crashlytics Auto-Upload
+  // 4. Optional Firebase Crashlytics Auto-Upload (supports boolean or env filter like ['release', 'prod'])
   let uploadedCrashlytics = false;
-  if (config.ios.autoUploadCrashlytics && dsymDirs.length > 0) {
+  let shouldUploadCrashlytics = false;
+  if (config.ios.autoUploadCrashlytics) {
+    if (typeof config.ios.autoUploadCrashlytics === 'boolean') {
+      shouldUploadCrashlytics = config.ios.autoUploadCrashlytics;
+    } else if (typeof config.ios.autoUploadCrashlytics === 'string') {
+      shouldUploadCrashlytics = config.ios.autoUploadCrashlytics.toLowerCase() === envName.toLowerCase();
+    } else if (Array.isArray(config.ios.autoUploadCrashlytics)) {
+      shouldUploadCrashlytics = config.ios.autoUploadCrashlytics.some(
+        (e: string) => String(e).toLowerCase() === envName.toLowerCase()
+      );
+    }
+  }
+
+  if (shouldUploadCrashlytics && dsymDirs.length > 0) {
     const uploadScriptCandidates = [
       path.join(iosPlatformsDir, 'Pods/FirebaseCrashlytics/upload-symbols'),
       path.join(projectDir, 'node_modules/@nativescript/firebase-crashlytics/platforms/ios/Pods/FirebaseCrashlytics/upload-symbols'),
