@@ -74,60 +74,78 @@ export function updateVersioning(
   }
   const versionFromPackageJson = JSON.parse(fs.readFileSync(packageJsonFile, 'utf8')).version;
 
-  const currentBuildNum = getPlatformValue(envRulesContent.buildNumber, platform, '1');
+  const currentPlatform = (platform || 'android').toLowerCase();
+  const otherPlatform = currentPlatform === 'ios' ? 'android' : 'ios';
 
-  if (!envRulesContent.version || !currentBuildNum) {
+  const currentPlatformVersion = getPlatformValue(envRulesContent.version, currentPlatform, '1.0.0');
+  const otherPlatformVersion = getPlatformValue(envRulesContent.version, otherPlatform, currentPlatformVersion);
+
+  const currentPlatformBuildNum = getPlatformValue(envRulesContent.buildNumber, currentPlatform, '1');
+  const otherPlatformBuildNum = getPlatformValue(envRulesContent.buildNumber, otherPlatform, '1');
+
+  if (!envRulesContent.version || !currentPlatformBuildNum) {
     throw new Error(`-o[NeoEnv]o--x Could not find related "Version Info" from "Env Rules" file! Please ensure "version", "buildNumber", and "versionCode" are defined.`);
   }
 
-  if (versionBumped(envRulesContent.version, versionFromPackageJson)) {
-    throw new Error(`-o[NeoEnv]o--x Previous building version "${envRulesContent.version}" is beyond "package.json" version "${versionFromPackageJson}". Please check.`);
+  if (versionBumped(currentPlatformVersion, versionFromPackageJson)) {
+    throw new Error(`-o[NeoEnv]o--x Previous building version "${currentPlatformVersion}" is beyond "package.json" version "${versionFromPackageJson}". Please check.`);
   }
 
-  if (versionBumped(versionFromPackageJson, envRulesContent.version)) {
-    envRulesContent.version = versionFromPackageJson;
+  const isCurrentPlatformBumped = versionBumped(versionFromPackageJson, currentPlatformVersion);
+
+  if (isCurrentPlatformBumped) {
+    const newCurrentPlatformVersion = versionFromPackageJson;
+    const newCurrentPlatformBuildNum = '1';
+
+    if (newCurrentPlatformVersion === otherPlatformVersion) {
+      envRulesContent.version = newCurrentPlatformVersion;
+    } else {
+      envRulesContent.version = {
+        [currentPlatform]: newCurrentPlatformVersion,
+        [otherPlatform]: otherPlatformVersion
+      };
+    }
+
     envRulesContent.buildNumber = {
-      ios: '1',
-      android: '1'
+      [currentPlatform]: newCurrentPlatformBuildNum,
+      [otherPlatform]: otherPlatformBuildNum
     };
-    logger.info(`[NeoEnv] 🏷️  Version Info    -> Updated to "${envRulesContent.version}", reset build # to "1"`);
+    logger.info(`[NeoEnv] 🏷️  Version Info    -> Updated to "${newCurrentPlatformVersion}" for ${currentPlatform}, reset build # to "1"`);
   } else {
     if (inReleaseMode) {
-      const nextBuildNum = (+currentBuildNum + 1).toString();
-      const prevIos = getPlatformValue(envRulesContent.buildNumber, 'ios', currentBuildNum);
-      const prevAndroid = getPlatformValue(envRulesContent.buildNumber, 'android', currentBuildNum);
+      const nextBuildNum = (+currentPlatformBuildNum + 1).toString();
 
       envRulesContent.buildNumber = {
-        ios: platform === 'ios' ? nextBuildNum : prevIos,
-        android: platform === 'android' ? nextBuildNum : prevAndroid
+        [currentPlatform]: nextBuildNum,
+        [otherPlatform]: otherPlatformBuildNum
       };
-      logger.info(`[NeoEnv] 🏷️  Version Info    -> "${envRulesContent.version}" (Build: "${nextBuildNum}" for ${platform})`);
+      logger.info(`[NeoEnv] 🏷️  Version Info    -> "${currentPlatformVersion}" (Build: "${nextBuildNum}" for ${currentPlatform})`);
     } else {
-      logger.info(`[NeoEnv] 🏷️  Version Info    -> "${envRulesContent.version}" (Build: "${currentBuildNum}" [Dev Mode - Skipped Auto-Bump])`);
+      logger.info(`[NeoEnv] 🏷️  Version Info    -> "${currentPlatformVersion}" (Build: "${currentPlatformBuildNum}" [Dev Mode - Skipped Auto-Bump])`);
     }
   }
 
-  const activeBuildNum = getPlatformValue(envRulesContent.buildNumber, platform, '1');
+  const activeBuildNum = getPlatformValue(envRulesContent.buildNumber, currentPlatform, '1');
+  const activeVersion = getPlatformValue(envRulesContent.version, currentPlatform, '1.0.0');
   const autoVersionCode = envRulesContent.autoVersionCode === true;
   if (!inReleaseMode) {
     return envRulesContent;
   }
 
   if (autoVersionCode) {
-    const result = generateVersionCode(envRulesContent.version, activeBuildNum);
+    const result = generateVersionCode(activeVersion, activeBuildNum);
     if (result.error) {
       throw new Error(`[NeoEnv] ❌ Could not generate Version Code: ${result.errorMessage}`);
     } else {
-      const prevIosVerCode = getPlatformValue(envRulesContent.versionCode, 'ios', result.versionCode!);
-      const prevAndroidVerCode = getPlatformValue(envRulesContent.versionCode, 'android', result.versionCode!);
+      const prevOtherVerCode = getPlatformValue(envRulesContent.versionCode, otherPlatform, result.versionCode!);
 
       envRulesContent.versionCode = {
-        ios: platform === 'ios' ? result.versionCode! : prevIosVerCode,
-        android: platform === 'android' ? result.versionCode! : prevAndroidVerCode
+        [currentPlatform]: result.versionCode!,
+        [otherPlatform]: prevOtherVerCode
       };
     }
-    const currentPlatformVerCode = getPlatformValue(envRulesContent.versionCode, platform);
-    logger.info(`[NeoEnv] 🔢 Version Code   -> "${currentPlatformVerCode}" (Version: "${envRulesContent.version}", Build: "${activeBuildNum}")`);
+    const currentPlatformVerCode = getPlatformValue(envRulesContent.versionCode, currentPlatform);
+    logger.info(`[NeoEnv] 🔢 Version Code   -> "${currentPlatformVerCode}" (Version: "${activeVersion}", Build: "${activeBuildNum}")`);
   }
 
   return envRulesContent;
@@ -140,11 +158,12 @@ export function saveVersioningToAndroidGradle(
 ): void {
   const gradleFile = path.resolve(appResourcesFolder, 'app.gradle');
   const androidVersionCode = getPlatformValue(envRulesContent.versionCode, 'android');
+  const androidVersionName = getPlatformValue(envRulesContent.version, 'android');
 
   fileUtils.replaceContentInFile(
     logger,
     /(versionName)[\s\d."]+"/,
-    `versionName "${envRulesContent.version}"`,
+    `versionName "${androidVersionName}"`,
     gradleFile
   );
 

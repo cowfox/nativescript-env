@@ -1,4 +1,5 @@
 export { getAppId, getEnvAppId, GetAppIdOptions } from './helper';
+export * from './utils/artifacts';
 export * from './utils/env-rules';
 export * from './utils/file';
 export * from './utils/processes';

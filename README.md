@@ -186,6 +186,9 @@ directCopyRules:
   - **Android 12+ Splash Logos**: Automatically scales master icons to **48.2% Safe Zone ($\frac{115}{160 \times \sqrt{2}}$)** onto transparent canvases (`drawable-*/splash_screen_logo.png`) to fit Android 12+ circular viewports without corner clipping.
   - **iOS App Icons**: Generates full `AppIcon.appiconset` resolutions.
 - 🔢 **Auto Versioning**: Manages `versionName`, `versionCode`, and `buildNumber` across builds with platform isolation (`{ "android": "...", "ios": "..." }`).
+- 📦 **Automated Release Artifacts & Symbols Packaging**:
+  - **Android**: Automatically collects `.aab` / `.apk` and packages un-nested C++/NDK native debug symbols (`.so`) into standard `.zip` files ready for Google Play Console, plus R8/ProGuard `mapping.txt`.
+  - **iOS**: Archives `.xcarchive` directly into `dist/`, packages `.dSYM` debug symbols to `.zip`, and provides optional automatic upload to Firebase Crashlytics via `upload-symbols`.
 - 🛡️ **Zero Source Pollution**: Hooks automatically back up and restore modified configuration files, keeping working trees clean.
 
 ---
@@ -205,6 +208,7 @@ directCopyRules:
 | `extraPaths`                 | `string[]`               | Additional directories outside `App_Resources` to process suffix file swapping.                         |
 | `directCopyRules`            | `Record<string, string>` | Direct file copy mappings after standard environment file swap.                                         |
 | `appIconPath`                | `string`                 | Master icon file path to generate platform app icons (iOS & Android Adaptive Icons).                    |
+| `artifacts`                  | `ArtifactsConfig`        | Configures automated release artifacts and symbols collection (`dist/`, `.aab`, `.so.zip`, `.xcarchive`, `dSYM.zip`, Crashlytics). |
 
 ---
 
