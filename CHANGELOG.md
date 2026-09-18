@@ -1,5 +1,31 @@
 # @wuneo/nativescript-env
 
+## 1.1.0
+
+### Minor Changes
+
+- 04d2f5f: feat(artifacts): add automated release artifacts collection and symbols packaging for Android and iOS
+
+  - **Android**: Automatically collects `.aab`, `.apk`, packages C++/NDK native debug symbols (`.so`) into `.zip` files ready for Google Play Console (supports AGP 7/8), and archives R8/ProGuard `mapping.txt`.
+  - **iOS**: Archives `.xcarchive` directly into structured `dist/v{version}-{buildNumber}_{env}/` directories, collects `.ipa` packages, packages `.dSYM` debug symbols to `.zip`, and provides optional automatic upload to Firebase Crashlytics via `upload-symbols`.
+  - **Hooks**: Added unified, multi-alias `after-build` lifecycle hooks with debounce protection.
+  - **CLI**: Added `npx wuneo-env artifacts [android|ios|all]` command and updated template configuration in `init`.
+
+### Patch Changes
+
+- 0eab40c: # Changelog
+
+  - feat: add isReleaseBuild utility and refactor artifact collection to use it for release verification
+  - 🐞 fix(version): Sync changeset auto/status fix from shared-tooling
+
+- fdafc48: # Changelog
+
+  - feat: enable platform-specific versioning to allow independent build number incrementing per target
+
+- 2149b7c: # Changelog
+
+  - ✨ feat: enable environment-based filtering for Firebase Crashlytics auto-upload and update YAML/JSON formatting rules
+
 ## 1.1.0-beta.3
 
 ### Patch Changes
