@@ -42,9 +42,36 @@ export function resolveArtifactsConfig(envRules?: EnvironmentRulesContent): Requ
     ios: {
       packArchive: custom.ios?.packArchive !== false,
       packDsym: custom.ios?.packDsym !== false,
-      autoUploadCrashlytics: custom.ios?.autoUploadCrashlytics === true,
+      autoUploadCrashlytics: custom.ios?.autoUploadCrashlytics ?? false,
     },
   };
+}
+
+/**
+ * Detects whether the current build execution is a release build.
+ * Debug builds, simulator runs, or development device runs without `--release` are excluded.
+ */
+export function isReleaseBuild(hookArgs?: any, argv: string[] = process.argv): boolean {
+  const buildData = hookArgs?.buildData || hookArgs?.prepareData;
+  const options = hookArgs?.options;
+
+  // 1. Hook data flags provided by NativeScript CLI
+  if (buildData?.release === true || hookArgs?.release === true || options?.release === true) {
+    return true;
+  }
+
+  if (buildData?.env?.release === true || options?.env?.release === true) {
+    return true;
+  }
+
+  // 2. Command line arguments
+  const normalizedArgv = argv.map((a) => a.toLowerCase());
+  return (
+    normalizedArgv.includes('--release') ||
+    normalizedArgv.includes('-release') ||
+    normalizedArgv.includes('--env.release') ||
+    normalizedArgv.some((a) => a === '--release' || a.startsWith('--release=') || a === '-r')
+  );
 }
 
 /**
@@ -235,7 +262,7 @@ export function collectAndroidArtifacts(
     return null;
   }
 
-  const version = envRules.version || '1.0.0';
+  const version = getPlatformValue(envRules.version, 'android', '1.0.0');
   const buildNumber = getPlatformValue(envRules.buildNumber, 'android', '1');
   const appName = resolveAppName(projectDir, config.appName, fallbackProjectName);
   const outDir = resolveReleaseOutputDir(projectDir, config, version, buildNumber, envName, 'android');
@@ -388,7 +415,7 @@ export function collectIosArtifacts(
     return null;
   }
 
-  const version = envRules.version || '1.0.0';
+  const version = getPlatformValue(envRules.version, 'ios', '1.0.0');
   const buildNumber = getPlatformValue(envRules.buildNumber, 'ios', '1');
   const appName = resolveAppName(projectDir, config.appName, fallbackProjectName);
   const outDir = resolveReleaseOutputDir(projectDir, config, version, buildNumber, envName, 'ios');
@@ -524,9 +551,22 @@ export function collectIosArtifacts(
     } catch (_e) {}
   }
 
-  // 4. Optional Firebase Crashlytics Auto-Upload
+  // 4. Optional Firebase Crashlytics Auto-Upload (supports boolean or env filter like ['release', 'prod'])
   let uploadedCrashlytics = false;
-  if (config.ios.autoUploadCrashlytics && dsymDirs.length > 0) {
+  let shouldUploadCrashlytics = false;
+  if (config.ios.autoUploadCrashlytics) {
+    if (typeof config.ios.autoUploadCrashlytics === 'boolean') {
+      shouldUploadCrashlytics = config.ios.autoUploadCrashlytics;
+    } else if (typeof config.ios.autoUploadCrashlytics === 'string') {
+      shouldUploadCrashlytics = config.ios.autoUploadCrashlytics.toLowerCase() === envName.toLowerCase();
+    } else if (Array.isArray(config.ios.autoUploadCrashlytics)) {
+      shouldUploadCrashlytics = config.ios.autoUploadCrashlytics.some(
+        (e: string) => String(e).toLowerCase() === envName.toLowerCase()
+      );
+    }
+  }
+
+  if (shouldUploadCrashlytics && dsymDirs.length > 0) {
     const uploadScriptCandidates = [
       path.join(iosPlatformsDir, 'Pods/FirebaseCrashlytics/upload-symbols'),
       path.join(projectDir, 'node_modules/@nativescript/firebase-crashlytics/platforms/ios/Pods/FirebaseCrashlytics/upload-symbols'),

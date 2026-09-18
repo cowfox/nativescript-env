@@ -25,6 +25,7 @@ export = async function ($logger: any, $projectData: any, hookArgs: any) {
 
   const platformFolderPath = path.join($projectData.platformsDir, platformName);
   const platformVersionCode = envRulesUtils.getPlatformValue(envRulesContent.versionCode, platformName);
+  const platformVersionName = envRulesUtils.getPlatformValue(envRulesContent.version, platformName);
 
   if (platformName === 'ios') {
     const projectInfoPlistPath = path.join(
@@ -34,7 +35,7 @@ export = async function ($logger: any, $projectData: any, hookArgs: any) {
     if (fs.existsSync(projectInfoPlistPath)) {
       let infoPlistContent: any = plist.parse(fs.readFileSync(projectInfoPlistPath, 'utf8'));
 
-      infoPlistContent['CFBundleShortVersionString'] = envRulesContent.version;
+      infoPlistContent['CFBundleShortVersionString'] = platformVersionName;
       infoPlistContent['CFBundleVersion'] = platformVersionCode;
 
       fs.writeFileSync(projectInfoPlistPath, plist.build(infoPlistContent));
@@ -45,7 +46,7 @@ export = async function ($logger: any, $projectData: any, hookArgs: any) {
     fileUtils.replaceContentInFile(
       $logger,
       /(android:versionName=")[\d.]+(")/,
-      `$1${envRulesContent.version}$2`,
+      `$1${platformVersionName}$2`,
       projectAndroidManifestPath
     );
 
@@ -57,7 +58,7 @@ export = async function ($logger: any, $projectData: any, hookArgs: any) {
     );
   }
 
-  $logger.debug?.(`[NeoEnv] 🧹 Updated native build manifest version to "${envRulesContent.version}" (${platformVersionCode})`);
+  $logger.debug?.(`[NeoEnv] 🧹 Updated native build manifest version to "${platformVersionName}" (${platformVersionCode})`);
 
   if (platformName === 'android') {
     let matchPatternStr = envRulesContent.envFilesMatchRules;

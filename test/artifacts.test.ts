@@ -9,7 +9,8 @@ import {
   collectAndroidArtifacts,
   collectIosArtifacts,
   formatBytes,
-  printArtifactsSummary
+  printArtifactsSummary,
+  isReleaseBuild
 } from '../src/utils/artifacts';
 import { EnvironmentRulesContent } from '../src/utils/env-rules';
 
@@ -63,6 +64,28 @@ describe('artifacts.ts', () => {
       expect(config.android.packAab).toBe(false);
       expect(config.android.packNativeSymbols).toBe(false);
       expect(config.ios.autoUploadCrashlytics).toBe(true);
+    });
+
+    it('should support string or array env filters for autoUploadCrashlytics', () => {
+      const configWithArray = resolveArtifactsConfig({
+        environments: [],
+        artifacts: {
+          ios: {
+            autoUploadCrashlytics: ['release', 'prod'],
+          },
+        },
+      });
+      expect(configWithArray.ios.autoUploadCrashlytics).toEqual(['release', 'prod']);
+
+      const configWithString = resolveArtifactsConfig({
+        environments: [],
+        artifacts: {
+          ios: {
+            autoUploadCrashlytics: 'release',
+          },
+        },
+      });
+      expect(configWithString.ios.autoUploadCrashlytics).toBe('release');
     });
   });
 
@@ -233,4 +256,38 @@ describe('artifacts.ts', () => {
       }).not.toThrow();
     });
   });
+
+  describe('isReleaseBuild', () => {
+    it('should detect release build from buildData.release', () => {
+      expect(isReleaseBuild({ buildData: { release: true } }, ['node', 'ns', 'build', 'android'])).toBe(true);
+      expect(isReleaseBuild({ buildData: { release: false } }, ['node', 'ns', 'build', 'android'])).toBe(false);
+    });
+
+    it('should detect release build from hookArgs.release or options.release', () => {
+      expect(isReleaseBuild({ release: true }, ['node', 'ns'])).toBe(true);
+      expect(isReleaseBuild({ options: { release: true } }, ['node', 'ns'])).toBe(true);
+    });
+
+    it('should detect release build from argv --release flag', () => {
+      expect(isReleaseBuild({}, ['node', 'ns', 'build', 'android', '--release'])).toBe(true);
+      expect(isReleaseBuild({}, ['node', 'ns', 'build', 'ios', '--release'])).toBe(true);
+      expect(isReleaseBuild({}, ['node', 'ns', 'build', 'android', '--env.release'])).toBe(true);
+    });
+
+    it('should NOT treat general debug builds or run to device as release build', () => {
+      expect(isReleaseBuild({}, ['node', 'ns', 'run', 'ios'])).toBe(false);
+      expect(isReleaseBuild({}, ['node', 'ns', 'run', 'android'])).toBe(false);
+      expect(isReleaseBuild({}, ['node', 'ns', 'run', 'ios', '--device'])).toBe(false);
+      expect(isReleaseBuild({}, ['node', 'ns', 'build', 'ios', '--for-device'])).toBe(false);
+      expect(isReleaseBuild({}, ['node', 'ns', 'run', 'android', '--device'])).toBe(false);
+      expect(isReleaseBuild({}, ['node', 'ns', 'run', 'ios', '--env.use.prod'])).toBe(false);
+      expect(isReleaseBuild({}, ['node', 'ns', 'run', 'android', '--env.use.release'])).toBe(false);
+    });
+
+    it('should treat build to device WITH --release as release build', () => {
+      expect(isReleaseBuild({}, ['node', 'ns', 'build', 'ios', '--for-device', '--release'])).toBe(true);
+      expect(isReleaseBuild({ buildData: { release: true } }, ['node', 'ns', 'build', 'ios', '--for-device'])).toBe(true);
+    });
+  });
 });
+

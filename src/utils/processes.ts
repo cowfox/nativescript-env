@@ -33,5 +33,6 @@ export {
   collectAndroidArtifacts,
   collectIosArtifacts,
   printArtifactsSummary,
-  resolveArtifactsConfig
+  resolveArtifactsConfig,
+  isReleaseBuild
 } from './artifacts';

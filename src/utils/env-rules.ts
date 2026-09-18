@@ -19,7 +19,7 @@ export interface ArtifactsAndroidConfig {
 export interface ArtifactsIosConfig {
   packArchive?: boolean;
   packDsym?: boolean;
-  autoUploadCrashlytics?: boolean;
+  autoUploadCrashlytics?: boolean | string | string[];
 }
 
 export interface ArtifactsConfig {
@@ -33,7 +33,7 @@ export interface ArtifactsConfig {
 }
 
 export interface EnvironmentRulesContent {
-  version?: string;
+  version?: string | { android?: string; ios?: string; default?: string; [key: string]: any };
   buildNumber?: string | number | { android?: string; ios?: string; default?: string; [key: string]: any };
   versionCode?: string | number | { android?: string; ios?: string; default?: string; [key: string]: any };
   autoVersionCode?: boolean;
@@ -155,9 +155,9 @@ export function readEnvRules(envRulesFileFullPath: string): EnvironmentRulesCont
  */
 export function saveEnvRules(envRulesFileFullPath: string, content: EnvironmentRulesContent): void {
   if (envRulesFileFullPath.endsWith('.yaml') || envRulesFileFullPath.endsWith('.yml')) {
-    const yamlString = yaml.dump(content, { indent: 4, quotingType: '"' });
+    const yamlString = yaml.dump(content, { indent: 2, lineWidth: -1 });
     fs.writeFileSync(envRulesFileFullPath, yamlString, 'utf8');
   } else {
-    fs.writeFileSync(envRulesFileFullPath, JSON.stringify(content, null, 4), 'utf8');
+    fs.writeFileSync(envRulesFileFullPath, JSON.stringify(content, null, 2), 'utf8');
   }
 }
